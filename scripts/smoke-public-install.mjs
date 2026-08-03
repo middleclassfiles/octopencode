@@ -49,12 +49,30 @@ npmEnv.npm_config_verify_deps_before_run = undefined;
 
 const formatCommand = (command, args) => [command, ...args].join(" ");
 
+// npm/pnpm are .cmd shims on Windows and cannot be spawned directly; route
+// them through cmd.exe with a hand-built command line.
+const WINDOWS_CMD_SHIMS = new Set(["npm", "npx", "pnpm", "corepack", "yarn", "opencode", "hydra"]);
+const needsWindowsShell = (command) =>
+  process.platform === "win32" && WINDOWS_CMD_SHIMS.has(command.toLowerCase());
+
+const quoteArg = (part) => (/[\s"]/.test(part) ? `"${part.replace(/"/g, '\\"')}"` : part);
+
 const runChecked = (command, args, options = {}) => {
-  const result = spawnSync(command, args, {
-    encoding: "utf8",
-    stdio: "pipe",
-    ...options,
-  });
+  const result = needsWindowsShell(command)
+    ? spawnSync(
+        process.env.ComSpec ?? "cmd.exe",
+        ["/d", "/s", "/c", [command, ...args].map(quoteArg).join(" ")],
+        {
+          encoding: "utf8",
+          stdio: "pipe",
+          ...options,
+        },
+      )
+    : spawnSync(command, args, {
+        encoding: "utf8",
+        stdio: "pipe",
+        ...options,
+      });
 
   if (result.status !== 0) {
     throw new Error(
@@ -124,24 +142,58 @@ const main = async () => {
       env: npmEnv,
     });
 
-    console.log("Launching packaged Hydra in a fresh workspace...");
     const hydraBin =
       process.platform === "win32"
         ? join(installDir, "node_modules", ".bin", "hydra.cmd")
         : join(installDir, "node_modules", ".bin", "hydra");
 
+    const runEnv = {
+      ...runtimeEnv,
+      // os.homedir() on Windows reads USERPROFILE, not HOME.
+      USERPROFILE: homeDir,
+      PATH: `${binDir}${delimiter}${process.env.PATH ?? ""}`,
+    };
+
+    console.log("Initializing fresh workspace...");
+    if (process.platform === "win32") {
+      runChecked(
+        process.env.ComSpec ?? "cmd.exe",
+        ["/d", "/s", "/c", `${quoteArg(hydraBin)} init`],
+        {
+          cwd: workspaceDir,
+          env: runEnv,
+        },
+      );
+    } else {
+      runChecked(hydraBin, ["init"], {
+        cwd: workspaceDir,
+        env: runEnv,
+      });
+    }
+
+    console.log("Launching packaged Hydra in a fresh workspace...");
+
     let stdout = "";
     let stderr = "";
 
-    serverProcess = spawn(hydraBin, [], {
-      cwd: workspaceDir,
-      env: {
-        ...runtimeEnv,
-        HYDRA_NO_OPEN: "1",
-        PATH: `${binDir}${delimiter}${runtimeEnv.PATH ?? ""}`,
-      },
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    serverProcess =
+      process.platform === "win32"
+        ? spawn(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", quoteArg(hydraBin)], {
+            cwd: workspaceDir,
+            env: {
+              ...runEnv,
+              HYDRA_NO_OPEN: "1",
+            },
+            stdio: ["ignore", "pipe", "pipe"],
+          })
+        : spawn(hydraBin, [], {
+            cwd: workspaceDir,
+            env: {
+              ...runEnv,
+              HYDRA_NO_OPEN: "1",
+            },
+            stdio: ["ignore", "pipe", "pipe"],
+          });
 
     serverProcess.stdout?.on("data", (chunk) => {
       stdout += chunk.toString();
@@ -255,10 +307,16 @@ const main = async () => {
     process.exitCode = 1;
   } finally {
     if (serverProcess && serverProcess.exitCode === null) {
-      serverProcess.kill("SIGTERM");
-      await delay(500);
-      if (serverProcess.exitCode === null) {
-        serverProcess.kill("SIGKILL");
+      if (process.platform === "win32") {
+        // Kill the whole tree: SIGTERM on the cmd.exe parent would orphan the
+        // node server grandchild and leave temp files locked.
+        spawnSync("taskkill", ["/pid", String(serverProcess.pid), "/t", "/f"], { stdio: "ignore" });
+      } else {
+        serverProcess.kill("SIGTERM");
+        await delay(500);
+        if (serverProcess.exitCode === null) {
+          serverProcess.kill("SIGKILL");
+        }
       }
     }
 
