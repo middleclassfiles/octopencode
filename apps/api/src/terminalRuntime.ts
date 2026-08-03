@@ -2,7 +2,7 @@ import type { IncomingMessage } from "node:http";
 import { join } from "node:path";
 import type { Duplex } from "node:stream";
 
-import type { TerminalSnapshot } from "@octogent/core";
+import type { TerminalSnapshot } from "@hydra/core";
 import type { WebSocket } from "ws";
 import { WebSocketServer } from "ws";
 
@@ -62,10 +62,10 @@ export const createTerminalRuntime = ({
   workspaceCwd,
   projectStateDir,
   gitClient = createDefaultGitClient(),
-  getApiBaseUrl = () => process.env.OCTOGENT_API_ORIGIN ?? "http://127.0.0.1:8787",
+  getApiBaseUrl = () => process.env.HYDRA_API_ORIGIN ?? "http://127.0.0.1:8787",
   maxConcurrentSessions,
 }: CreateTerminalRuntimeOptions) => {
-  const stateDir = projectStateDir ?? join(workspaceCwd, ".octogent");
+  const stateDir = projectStateDir ?? join(workspaceCwd, ".hydra");
   const sessions = new Map<string, TerminalSession>();
   const websocketServer = new WebSocketServer({ noServer: true });
   const terminalEventsWebsocketServer = new WebSocketServer({ noServer: true });
@@ -75,15 +75,15 @@ export const createTerminalRuntime = ({
   const registryPersistence = createTerminalRegistryPersistence(registryPath);
   const terminals = registryState.terminals;
   let uiState = registryState.uiState;
-  const isDebugPtyLogsEnabled = process.env.OCTOGENT_DEBUG_PTY_LOGS === "1";
-  const ptyLogDir = process.env.OCTOGENT_DEBUG_PTY_LOG_DIR ?? join(stateDir, "logs");
+  const isDebugPtyLogsEnabled = process.env.HYDRA_DEBUG_PTY_LOGS === "1";
+  const ptyLogDir = process.env.HYDRA_DEBUG_PTY_LOG_DIR ?? join(stateDir, "logs");
   const transcriptDirectoryPath = join(stateDir, "state", "transcripts");
   const configuredMaxConcurrentSessions = (() => {
     if (maxConcurrentSessions !== undefined) {
       return maxConcurrentSessions;
     }
 
-    const raw = process.env.OCTOGENT_MAX_TERMINAL_SESSIONS?.trim();
+    const raw = process.env.HYDRA_MAX_TERMINAL_SESSIONS?.trim();
     if (!raw) {
       return TERMINAL_MAX_CONCURRENT_SESSIONS;
     }
@@ -307,14 +307,14 @@ export const createTerminalRuntime = ({
 
   const allocateDefaultTerminalName = (): string => {
     const usedNumbers = new Set<number>();
-    const pattern = /^Octogent Terminal (\d+)$/;
+    const pattern = /^Hydra Terminal (\d+)$/;
     for (const t of terminals.values()) {
       const match = pattern.exec(t.tentacleName);
       if (match) usedNumbers.add(Number(match[1]));
     }
     let n = 1;
     while (usedNumbers.has(n)) n++;
-    return `Octogent Terminal ${n}`;
+    return `Hydra Terminal ${n}`;
   };
 
   const isTerminalRecentlyActive = (terminal: PersistedTerminal): boolean => {
@@ -434,7 +434,7 @@ export const createTerminalRuntime = ({
       const capacity = sessionRuntime.getSessionCapacity();
       if (capacity.active >= capacity.max) {
         throw new RuntimeInputError(
-          `Terminal session limit reached (${capacity.max}). Close an existing terminal session or increase OCTOGENT_MAX_TERMINAL_SESSIONS.`,
+          `Terminal session limit reached (${capacity.max}). Close an existing terminal session or increase HYDRA_MAX_TERMINAL_SESSIONS.`,
         );
       }
     }
@@ -472,8 +472,8 @@ export const createTerminalRuntime = ({
       worktreeManager.createTentacleWorktree(effectiveWorktreeId, baseRef);
     }
 
-    if (terminal.agentProvider === "claude-code") {
-      // Claude hooks should only be installed for Claude-backed terminals.
+    if (terminal.agentProvider === "opencode") {
+      // The opencode bridge plugin should only be installed for opencode-backed terminals.
       try {
         const hookTargetCwd = shouldCreateWorktree
           ? worktreeManager.getTentacleWorkspaceCwd(effectiveWorktreeId)
@@ -582,17 +582,11 @@ export const createTerminalRuntime = ({
       if (patch.isBottomTelemetryVisible !== undefined) {
         uiState.isBottomTelemetryVisible = patch.isBottomTelemetryVisible;
       }
-      if (patch.isCodexUsageVisible !== undefined) {
-        uiState.isCodexUsageVisible = patch.isCodexUsageVisible;
+      if (patch.isOpencodeUsageVisible !== undefined) {
+        uiState.isOpencodeUsageVisible = patch.isOpencodeUsageVisible;
       }
-      if (patch.isClaudeUsageVisible !== undefined) {
-        uiState.isClaudeUsageVisible = patch.isClaudeUsageVisible;
-      }
-      if (patch.isClaudeUsageSectionExpanded !== undefined) {
-        uiState.isClaudeUsageSectionExpanded = patch.isClaudeUsageSectionExpanded;
-      }
-      if (patch.isCodexUsageSectionExpanded !== undefined) {
-        uiState.isCodexUsageSectionExpanded = patch.isCodexUsageSectionExpanded;
+      if (patch.isOpencodeUsageSectionExpanded !== undefined) {
+        uiState.isOpencodeUsageSectionExpanded = patch.isOpencodeUsageSectionExpanded;
       }
       if (patch.terminalCompletionSound !== undefined) {
         uiState.terminalCompletionSound = patch.terminalCompletionSound;

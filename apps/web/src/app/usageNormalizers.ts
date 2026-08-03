@@ -1,8 +1,8 @@
-import { asNumber, asRecord, asString } from "@octogent/core";
+import { asNumber, asRecord, asString } from "@hydra/core";
 
-import type { ClaudeUsageSnapshot, CodexUsageSnapshot } from "./types";
+import type { OpencodeUsageSnapshot } from "./types";
 
-export const normalizeCodexUsageSnapshot = (value: unknown): CodexUsageSnapshot | null => {
+export const normalizeOpencodeUsageSnapshot = (value: unknown): OpencodeUsageSnapshot | null => {
   const record = asRecord(value);
   if (!record) {
     return null;
@@ -13,46 +13,18 @@ export const normalizeCodexUsageSnapshot = (value: unknown): CodexUsageSnapshot 
     return null;
   }
 
-  const source = record.source === "oauth-api" ? "oauth-api" : "none";
+  const source = record.source === "local-db" ? "local-db" : "none";
   return {
     status,
     source,
     fetchedAt: asString(record.fetchedAt) ?? new Date().toISOString(),
     message: asString(record.message),
-    planType: asString(record.planType),
-    primaryUsedPercent: asNumber(record.primaryUsedPercent),
-    secondaryUsedPercent: asNumber(record.secondaryUsedPercent),
-    creditsBalance: asNumber(record.creditsBalance),
-    creditsUnlimited: typeof record.creditsUnlimited === "boolean" ? record.creditsUnlimited : null,
-  };
-};
-
-export const normalizeClaudeUsageSnapshot = (value: unknown): ClaudeUsageSnapshot | null => {
-  const record = asRecord(value);
-  if (!record) {
-    return null;
-  }
-
-  const status = record.status;
-  if (status !== "ok" && status !== "unavailable" && status !== "error") {
-    return null;
-  }
-
-  const source =
-    record.source === "cli-pty" ? "cli-pty" : record.source === "oauth-api" ? "oauth-api" : "none";
-  return {
-    status,
-    source,
-    fetchedAt: asString(record.fetchedAt) ?? new Date().toISOString(),
-    message: asString(record.message),
-    planType: asString(record.planType),
-    primaryUsedPercent: asNumber(record.primaryUsedPercent),
-    primaryResetAt: asString(record.primaryResetAt),
-    secondaryUsedPercent: asNumber(record.secondaryUsedPercent),
-    secondaryResetAt: asString(record.secondaryResetAt),
-    sonnetUsedPercent: asNumber(record.sonnetUsedPercent),
-    sonnetResetAt: asString(record.sonnetResetAt),
-    extraUsageCostUsed: asNumber(record.extraUsageCostUsed),
-    extraUsageCostLimit: asNumber(record.extraUsageCostLimit),
+    sessionCount: asNumber(record.sessionCount),
+    costToday: asNumber(record.costToday),
+    cost7d: asNumber(record.cost7d),
+    cost30d: asNumber(record.cost30d),
+    tokensToday: asNumber(record.tokensToday),
+    tokens7d: asNumber(record.tokens7d),
+    tokens30d: asNumber(record.tokens30d),
   };
 };

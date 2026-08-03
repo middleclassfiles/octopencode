@@ -13,9 +13,9 @@ describe("interpolatePrompt", () => {
   it("replaces known variables", () => {
     const result = interpolatePrompt("Hello {{name}}, welcome to {{place}}.", {
       name: "Alice",
-      place: "Octogent",
+      place: "Hydra",
     });
-    expect(result).toBe("Hello Alice, welcome to Octogent.");
+    expect(result).toBe("Hello Alice, welcome to Hydra.");
   });
 
   it("leaves unknown placeholders intact", () => {

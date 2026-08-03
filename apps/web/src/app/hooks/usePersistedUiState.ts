@@ -22,10 +22,8 @@ const DEFAULT_IS_ACTIVE_AGENTS_SECTION_EXPANDED = true;
 const DEFAULT_IS_RUNTIME_STATUS_STRIP_VISIBLE = true;
 const DEFAULT_IS_MONITOR_VISIBLE = true;
 const DEFAULT_IS_BOTTOM_TELEMETRY_VISIBLE = true;
-const DEFAULT_IS_CODEX_USAGE_VISIBLE = true;
-const DEFAULT_IS_CLAUDE_USAGE_VISIBLE = true;
-const DEFAULT_IS_CLAUDE_USAGE_SECTION_EXPANDED = true;
-const DEFAULT_IS_CODEX_USAGE_SECTION_EXPANDED = true;
+const DEFAULT_IS_OPENCODE_USAGE_VISIBLE = true;
+const DEFAULT_IS_OPENCODE_USAGE_SECTION_EXPANDED = true;
 const DEFAULT_MINIMIZED_TERMINAL_IDS: string[] = [];
 const DEFAULT_TERMINAL_WIDTHS: Record<string, number> = {};
 const DEFAULT_CANVAS_OPEN_TERMINAL_IDS: string[] = [];
@@ -70,10 +68,8 @@ const buildPersistedUiStateSnapshot = ({
   isRuntimeStatusStripVisible,
   isMonitorVisible,
   isBottomTelemetryVisible,
-  isCodexUsageVisible,
-  isClaudeUsageVisible,
-  isClaudeUsageSectionExpanded,
-  isCodexUsageSectionExpanded,
+  isOpencodeUsageVisible,
+  isOpencodeUsageSectionExpanded,
   terminalCompletionSound,
   minimizedTerminalIds,
   terminalWidths,
@@ -88,10 +84,8 @@ const buildPersistedUiStateSnapshot = ({
   isRuntimeStatusStripVisible: boolean;
   isMonitorVisible: boolean;
   isBottomTelemetryVisible: boolean;
-  isCodexUsageVisible: boolean;
-  isClaudeUsageVisible: boolean;
-  isClaudeUsageSectionExpanded: boolean;
-  isCodexUsageSectionExpanded: boolean;
+  isOpencodeUsageVisible: boolean;
+  isOpencodeUsageSectionExpanded: boolean;
   terminalCompletionSound: TerminalCompletionSoundId;
   minimizedTerminalIds: string[];
   terminalWidths: Record<string, number>;
@@ -106,10 +100,8 @@ const buildPersistedUiStateSnapshot = ({
   isRuntimeStatusStripVisible,
   isMonitorVisible,
   isBottomTelemetryVisible,
-  isCodexUsageVisible,
-  isClaudeUsageVisible,
-  isClaudeUsageSectionExpanded,
-  isCodexUsageSectionExpanded,
+  isOpencodeUsageVisible,
+  isOpencodeUsageSectionExpanded,
   terminalCompletionSound,
   minimizedTerminalIds,
   terminalWidths,
@@ -130,10 +122,8 @@ const areUiStateSnapshotsEqual = (
   left.isRuntimeStatusStripVisible === right.isRuntimeStatusStripVisible &&
   left.isMonitorVisible === right.isMonitorVisible &&
   left.isBottomTelemetryVisible === right.isBottomTelemetryVisible &&
-  left.isCodexUsageVisible === right.isCodexUsageVisible &&
-  left.isClaudeUsageVisible === right.isClaudeUsageVisible &&
-  left.isClaudeUsageSectionExpanded === right.isClaudeUsageSectionExpanded &&
-  left.isCodexUsageSectionExpanded === right.isCodexUsageSectionExpanded &&
+  left.isOpencodeUsageVisible === right.isOpencodeUsageVisible &&
+  left.isOpencodeUsageSectionExpanded === right.isOpencodeUsageSectionExpanded &&
   left.terminalCompletionSound === right.terminalCompletionSound &&
   areStringArraysEqual(left.minimizedTerminalIds, right.minimizedTerminalIds) &&
   areNumberRecordMapsEqual(left.terminalWidths, right.terminalWidths) &&
@@ -159,14 +149,10 @@ type UsePersistedUiStateResult = {
   setIsMonitorVisible: Dispatch<SetStateAction<boolean>>;
   isBottomTelemetryVisible: boolean;
   setIsBottomTelemetryVisible: Dispatch<SetStateAction<boolean>>;
-  isCodexUsageVisible: boolean;
-  setIsCodexUsageVisible: Dispatch<SetStateAction<boolean>>;
-  isClaudeUsageVisible: boolean;
-  setIsClaudeUsageVisible: Dispatch<SetStateAction<boolean>>;
-  isClaudeUsageSectionExpanded: boolean;
-  setIsClaudeUsageSectionExpanded: Dispatch<SetStateAction<boolean>>;
-  isCodexUsageSectionExpanded: boolean;
-  setIsCodexUsageSectionExpanded: Dispatch<SetStateAction<boolean>>;
+  isOpencodeUsageVisible: boolean;
+  setIsOpencodeUsageVisible: Dispatch<SetStateAction<boolean>>;
+  isOpencodeUsageSectionExpanded: boolean;
+  setIsOpencodeUsageSectionExpanded: Dispatch<SetStateAction<boolean>>;
   terminalCompletionSound: TerminalCompletionSoundId;
   setTerminalCompletionSound: Dispatch<SetStateAction<TerminalCompletionSoundId>>;
   minimizedTerminalIds: string[];
@@ -206,13 +192,11 @@ export const usePersistedUiState = ({
   const [isBottomTelemetryVisible, setIsBottomTelemetryVisible] = useState(
     DEFAULT_IS_BOTTOM_TELEMETRY_VISIBLE,
   );
-  const [isCodexUsageVisible, setIsCodexUsageVisible] = useState(DEFAULT_IS_CODEX_USAGE_VISIBLE);
-  const [isClaudeUsageVisible, setIsClaudeUsageVisible] = useState(DEFAULT_IS_CLAUDE_USAGE_VISIBLE);
-  const [isClaudeUsageSectionExpanded, setIsClaudeUsageSectionExpanded] = useState(
-    DEFAULT_IS_CLAUDE_USAGE_SECTION_EXPANDED,
+  const [isOpencodeUsageVisible, setIsOpencodeUsageVisible] = useState(
+    DEFAULT_IS_OPENCODE_USAGE_VISIBLE,
   );
-  const [isCodexUsageSectionExpanded, setIsCodexUsageSectionExpanded] = useState(
-    DEFAULT_IS_CODEX_USAGE_SECTION_EXPANDED,
+  const [isOpencodeUsageSectionExpanded, setIsOpencodeUsageSectionExpanded] = useState(
+    DEFAULT_IS_OPENCODE_USAGE_SECTION_EXPANDED,
   );
   const [terminalCompletionSound, setTerminalCompletionSound] = useState<TerminalCompletionSoundId>(
     DEFAULT_TERMINAL_COMPLETION_SOUND,
@@ -276,10 +260,8 @@ export const usePersistedUiState = ({
           isRuntimeStatusStripVisible: DEFAULT_IS_RUNTIME_STATUS_STRIP_VISIBLE,
           isMonitorVisible: DEFAULT_IS_MONITOR_VISIBLE,
           isBottomTelemetryVisible: DEFAULT_IS_BOTTOM_TELEMETRY_VISIBLE,
-          isCodexUsageVisible: DEFAULT_IS_CODEX_USAGE_VISIBLE,
-          isClaudeUsageVisible: DEFAULT_IS_CLAUDE_USAGE_VISIBLE,
-          isClaudeUsageSectionExpanded: DEFAULT_IS_CLAUDE_USAGE_SECTION_EXPANDED,
-          isCodexUsageSectionExpanded: DEFAULT_IS_CODEX_USAGE_SECTION_EXPANDED,
+          isOpencodeUsageVisible: DEFAULT_IS_OPENCODE_USAGE_VISIBLE,
+          isOpencodeUsageSectionExpanded: DEFAULT_IS_OPENCODE_USAGE_SECTION_EXPANDED,
           terminalCompletionSound: DEFAULT_TERMINAL_COMPLETION_SOUND,
           minimizedTerminalIds: DEFAULT_MINIMIZED_TERMINAL_IDS,
           terminalWidths: DEFAULT_TERMINAL_WIDTHS,
@@ -320,12 +302,10 @@ export const usePersistedUiState = ({
         isMonitorVisible: snapshot.isMonitorVisible ?? DEFAULT_IS_MONITOR_VISIBLE,
         isBottomTelemetryVisible:
           snapshot.isBottomTelemetryVisible ?? DEFAULT_IS_BOTTOM_TELEMETRY_VISIBLE,
-        isCodexUsageVisible: snapshot.isCodexUsageVisible ?? DEFAULT_IS_CODEX_USAGE_VISIBLE,
-        isClaudeUsageVisible: snapshot.isClaudeUsageVisible ?? DEFAULT_IS_CLAUDE_USAGE_VISIBLE,
-        isClaudeUsageSectionExpanded:
-          snapshot.isClaudeUsageSectionExpanded ?? DEFAULT_IS_CLAUDE_USAGE_SECTION_EXPANDED,
-        isCodexUsageSectionExpanded:
-          snapshot.isCodexUsageSectionExpanded ?? DEFAULT_IS_CODEX_USAGE_SECTION_EXPANDED,
+        isOpencodeUsageVisible:
+          snapshot.isOpencodeUsageVisible ?? DEFAULT_IS_OPENCODE_USAGE_VISIBLE,
+        isOpencodeUsageSectionExpanded:
+          snapshot.isOpencodeUsageSectionExpanded ?? DEFAULT_IS_OPENCODE_USAGE_SECTION_EXPANDED,
         terminalCompletionSound:
           snapshot.terminalCompletionSound ?? DEFAULT_TERMINAL_COMPLETION_SOUND,
         minimizedTerminalIds: nextMinimizedTerminalIds,
@@ -367,20 +347,12 @@ export const usePersistedUiState = ({
         setIsBottomTelemetryVisible(snapshot.isBottomTelemetryVisible);
       }
 
-      if (snapshot.isCodexUsageVisible !== undefined) {
-        setIsCodexUsageVisible(snapshot.isCodexUsageVisible);
+      if (snapshot.isOpencodeUsageVisible !== undefined) {
+        setIsOpencodeUsageVisible(snapshot.isOpencodeUsageVisible);
       }
 
-      if (snapshot.isClaudeUsageVisible !== undefined) {
-        setIsClaudeUsageVisible(snapshot.isClaudeUsageVisible);
-      }
-
-      if (snapshot.isCodexUsageSectionExpanded !== undefined) {
-        setIsCodexUsageSectionExpanded(snapshot.isCodexUsageSectionExpanded);
-      }
-
-      if (snapshot.isClaudeUsageSectionExpanded !== undefined) {
-        setIsClaudeUsageSectionExpanded(snapshot.isClaudeUsageSectionExpanded);
+      if (snapshot.isOpencodeUsageSectionExpanded !== undefined) {
+        setIsOpencodeUsageSectionExpanded(snapshot.isOpencodeUsageSectionExpanded);
       }
 
       if (snapshot.terminalCompletionSound !== undefined) {
@@ -432,10 +404,8 @@ export const usePersistedUiState = ({
       isRuntimeStatusStripVisible,
       isMonitorVisible,
       isBottomTelemetryVisible,
-      isCodexUsageVisible,
-      isClaudeUsageVisible,
-      isClaudeUsageSectionExpanded,
-      isCodexUsageSectionExpanded,
+      isOpencodeUsageVisible,
+      isOpencodeUsageSectionExpanded,
       terminalCompletionSound,
       minimizedTerminalIds,
       terminalWidths,
@@ -481,10 +451,8 @@ export const usePersistedUiState = ({
     isBottomTelemetryVisible,
     isRuntimeStatusStripVisible,
     isMonitorVisible,
-    isCodexUsageVisible,
-    isClaudeUsageVisible,
-    isClaudeUsageSectionExpanded,
-    isCodexUsageSectionExpanded,
+    isOpencodeUsageVisible,
+    isOpencodeUsageSectionExpanded,
     isUiStateHydrated,
     minimizedTerminalIds,
     sidebarWidth,
@@ -510,14 +478,10 @@ export const usePersistedUiState = ({
     setIsMonitorVisible,
     isBottomTelemetryVisible,
     setIsBottomTelemetryVisible,
-    isCodexUsageVisible,
-    setIsCodexUsageVisible,
-    isClaudeUsageVisible,
-    setIsClaudeUsageVisible,
-    isClaudeUsageSectionExpanded,
-    setIsClaudeUsageSectionExpanded,
-    isCodexUsageSectionExpanded,
-    setIsCodexUsageSectionExpanded,
+    isOpencodeUsageVisible,
+    setIsOpencodeUsageVisible,
+    isOpencodeUsageSectionExpanded,
+    setIsOpencodeUsageSectionExpanded,
     terminalCompletionSound,
     setTerminalCompletionSound,
     minimizedTerminalIds,

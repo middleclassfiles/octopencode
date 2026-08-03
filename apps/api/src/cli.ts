@@ -4,7 +4,7 @@ import { createServer } from "node:net";
 import { basename, join, resolve } from "node:path";
 
 import {
-  ensureOctogentGitignoreEntry,
+  ensureHydraGitignoreEntry,
   ensureProjectScaffold,
   loadProjectConfig,
   loadProjectsRegistry,
@@ -23,7 +23,7 @@ const args = process.argv.slice(2);
 const command = args[0];
 
 const resolvePackageRoot = () => {
-  const envRoot = process.env.OCTOGENT_PACKAGE_ROOT?.trim();
+  const envRoot = process.env.HYDRA_PACKAGE_ROOT?.trim();
   if (envRoot) {
     return resolve(envRoot);
   }
@@ -60,10 +60,10 @@ const DEFAULT_START_PORT = 8787;
 const MAX_PORT_ATTEMPTS = 200;
 
 const initializeProject = (workspaceCwd: string, preferredName?: string) => {
-  const projectName = preferredName?.trim() || basename(workspaceCwd) || "octogent-project";
+  const projectName = preferredName?.trim() || basename(workspaceCwd) || "hydra-project";
   const hadConfig = loadProjectConfig(workspaceCwd) !== null;
   const projectConfig = ensureProjectScaffold(workspaceCwd, projectName);
-  ensureOctogentGitignoreEntry(workspaceCwd);
+  ensureHydraGitignoreEntry(workspaceCwd);
   registerProject(workspaceCwd, projectConfig.displayName);
   const projectStateDir = resolveProjectStateDir(workspaceCwd, projectConfig.displayName);
   migrateStateToGlobal(workspaceCwd, projectStateDir);
@@ -87,7 +87,7 @@ const resolveStartupProjectContext = (workspaceCwd: string) => {
     };
   }
 
-  const projectDisplayName = basename(workspaceCwd) || "octogent-project";
+  const projectDisplayName = basename(workspaceCwd) || "hydra-project";
   const projectStateDir = resolveEphemeralProjectStateDir(workspaceCwd);
   return {
     isInitialized: false,
@@ -101,12 +101,12 @@ const initProject = (name?: string) => {
   const { created, projectConfig, projectStateDir } = initializeProject(projectPath, name);
 
   console.log(
-    `${created ? "Initialized" : "Updated"} Octogent project "${projectConfig.displayName}" at ${projectPath}`,
+    `${created ? "Initialized" : "Updated"} Hydra project "${projectConfig.displayName}" at ${projectPath}`,
   );
-  console.log("  .octogent/ directory ready (project metadata, tentacles, worktrees)");
+  console.log("  .hydra/ directory ready (project metadata, tentacles, worktrees)");
   console.log(`  Global state: ${projectStateDir}`);
   console.log("  .gitignore updated");
-  console.log("\nRun `octogent` to start the dashboard.");
+  console.log("\nRun `hydra` to start the dashboard.");
 };
 
 const canListenOnPort = (port: number): Promise<boolean> =>
@@ -136,7 +136,7 @@ const findOpenPort = async (startPort: number): Promise<number> => {
 };
 
 const readPreferredStartPort = () => {
-  const rawPort = process.env.OCTOGENT_API_PORT ?? process.env.PORT;
+  const rawPort = process.env.HYDRA_API_PORT ?? process.env.PORT;
   if (!rawPort) {
     return DEFAULT_START_PORT;
   }
@@ -150,8 +150,7 @@ const readPreferredStartPort = () => {
 };
 
 const resolveRuntimeApiBase = () => {
-  const explicitBase =
-    process.env.OCTOGENT_API_ORIGIN?.trim() || process.env.OCTOGENT_API_BASE?.trim();
+  const explicitBase = process.env.HYDRA_API_ORIGIN?.trim() || process.env.HYDRA_API_BASE?.trim();
   if (explicitBase) {
     return explicitBase;
   }
@@ -170,13 +169,13 @@ const resolveRuntimeApiBase = () => {
 
 const apiError = () => {
   console.error(
-    `Error: Could not reach API at ${resolveRuntimeApiBase()}. Start Octogent in this project first.`,
+    `Error: Could not reach API at ${resolveRuntimeApiBase()}. Start Hydra in this project first.`,
   );
   process.exit(1);
 };
 
 const maybeOpenBrowser = (url: string) => {
-  if (process.env.OCTOGENT_NO_OPEN === "1" || process.env.CI === "1") {
+  if (process.env.HYDRA_NO_OPEN === "1" || process.env.CI === "1") {
     return;
   }
 
@@ -228,7 +227,7 @@ const startServer = async () => {
     projectStateDir,
     promptsDir,
     webDistDir: existsSync(webDistDir) ? webDistDir : undefined,
-    allowRemoteAccess: process.env.OCTOGENT_ALLOW_REMOTE_ACCESS === "1",
+    allowRemoteAccess: process.env.HYDRA_ALLOW_REMOTE_ACCESS === "1",
   });
 
   const shutdown = async () => {
@@ -257,7 +256,7 @@ const startServer = async () => {
   }
 
   console.log();
-  console.log("  Octogent is running");
+  console.log("  Hydra is running");
   console.log(`  Project: ${workspaceCwd}`);
   console.log(`  Name:    ${projectDisplayName}`);
   console.log(`  API:     ${apiBaseUrl}`);
@@ -530,7 +529,7 @@ const channelSend = async () => {
     process.exit(1);
   }
 
-  const fromTerminalId = parseFlag("--from") ?? process.env.OCTOGENT_SESSION_ID ?? "";
+  const fromTerminalId = parseFlag("--from") ?? process.env.HYDRA_SESSION_ID ?? "";
   const fromIndex = args.indexOf("--from");
   const message =
     fromIndex !== -1
@@ -622,7 +621,7 @@ const main = async () => {
     const projects = loadProjectsRegistry().projects;
     if (projects.length === 0) {
       console.log(
-        "No projects registered yet. Run `octogent` or `octogent init` in a project directory.",
+        "No projects registered yet. Run `hydra` or `hydra init` in a project directory.",
       );
       return;
     }
@@ -670,13 +669,13 @@ const main = async () => {
   }
 
   console.log(`Usage:
-  octogent                             Start the dashboard in the current project
-  octogent init [project-name]         Initialize the current directory explicitly
-  octogent projects                    List registered projects
+  hydra                             Start the dashboard in the current project
+  hydra init [project-name]         Initialize the current directory explicitly
+  hydra projects                    List registered projects
 
-  octogent tentacle create <name>      Create a tentacle (Octogent must be running)
-  octogent tentacle list               List tentacles
-  octogent terminal create [options]   Create a terminal
+  hydra tentacle create <name>      Create a tentacle (Hydra must be running)
+  hydra tentacle list               List tentacles
+  hydra terminal create [options]   Create a terminal
     --name, -n                         Terminal display name
     --workspace-mode, -w               shared | worktree
     --initial-prompt, -p               Raw initial prompt text
@@ -686,12 +685,12 @@ const main = async () => {
     --parent-terminal-id               Parent terminal ID for child terminals
     --prompt-template                  Prompt template name
     --prompt-variables                 JSON object of prompt template variables
-  octogent terminal list               List terminal lifecycle state
-  octogent terminal stop <id>          Stop a terminal session
-  octogent terminal kill <id>          Kill a terminal session or recorded process
-  octogent terminal prune              Remove stale, stopped, and exited terminal records
-  octogent channel send <id> <msg>     Send a channel message
-  octogent channel list <id>           List channel messages`);
+  hydra terminal list               List terminal lifecycle state
+  hydra terminal stop <id>          Stop a terminal session
+  hydra terminal kill <id>          Kill a terminal session or recorded process
+  hydra terminal prune              Remove stale, stopped, and exited terminal records
+  hydra channel send <id> <msg>     Send a channel message
+  hydra channel list <id>           List channel messages`);
   process.exit(1);
 };
 

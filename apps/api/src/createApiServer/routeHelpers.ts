@@ -1,11 +1,10 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import type { UsageChartResponse } from "../claudeSessionScanner";
-import type { ClaudeUsageSnapshot } from "../claudeUsage";
 import type { CodeIntelStore } from "../codeIntelStore";
-import type { CodexUsageSnapshot } from "../codexUsage";
 import type { GitHubRepoSummarySnapshot } from "../githubRepoSummary";
 import type { MonitorService } from "../monitor";
+import type { UsageChartResponse } from "../opencodeSessionScanner";
+import type { OpencodeUsageSnapshot } from "../opencodeUsage";
 import { RequestBodyTooLargeError, readJsonBody } from "./requestParsers";
 import { withCors } from "./security";
 
@@ -19,14 +18,11 @@ export type RouteHandlerDependencies = {
   userPromptsDir: string;
   getApiBaseUrl: () => string;
   getApiPort: () => string;
-  readClaudeUsageSnapshot: () => Promise<ClaudeUsageSnapshot>;
-  readClaudeOauthUsageSnapshot: () => Promise<ClaudeUsageSnapshot>;
-  readClaudeCliUsageSnapshot: () => Promise<ClaudeUsageSnapshot>;
-  readCodexUsageSnapshot: () => Promise<CodexUsageSnapshot>;
+  readOpencodeUsageSnapshot: () => Promise<OpencodeUsageSnapshot>;
   readGithubRepoSummary: () => Promise<GitHubRepoSummarySnapshot>;
   scanUsageHeatmap: (scope: "all" | "project") => Promise<UsageChartResponse>;
   monitorService: MonitorService;
-  invalidateClaudeUsageCache: () => void;
+  invalidateOpencodeUsageCache: () => void;
   codeIntelStore: CodeIntelStore;
 };
 

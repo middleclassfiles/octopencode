@@ -71,20 +71,20 @@ const findOpenPort = async (startPort) => {
 };
 
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-const startPort = parseStartPort(process.env.OCTOGENT_DEV_START_PORT);
+const startPort = parseStartPort(process.env.HYDRA_DEV_START_PORT);
 const apiPort = await findOpenPort(startPort);
 const apiOrigin = `http://127.0.0.1:${apiPort}`;
 
-console.log(`[octogent-dev] using api port ${apiPort}`);
+console.log(`[hydra-dev] using api port ${apiPort}`);
 
 const monorepoRoot = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 
 // Resolve project state dir from global registry.
 const resolveProjectStateDir = (workspaceCwd) => {
-  if (process.env.OCTOGENT_PROJECT_STATE_DIR) {
-    return process.env.OCTOGENT_PROJECT_STATE_DIR;
+  if (process.env.HYDRA_PROJECT_STATE_DIR) {
+    return process.env.HYDRA_PROJECT_STATE_DIR;
   }
-  const projectConfigPath = join(workspaceCwd, ".octogent", "project.json");
+  const projectConfigPath = join(workspaceCwd, ".hydra", "project.json");
   if (existsSync(projectConfigPath)) {
     try {
       const projectConfig = JSON.parse(readFileSync(projectConfigPath, "utf-8"));
@@ -92,47 +92,47 @@ const resolveProjectStateDir = (workspaceCwd) => {
         typeof projectConfig.projectId === "string" &&
         projectConfig.projectId.trim().length > 0
       ) {
-        return join(homedir(), ".octogent", "projects", projectConfig.projectId);
+        return join(homedir(), ".hydra", "projects", projectConfig.projectId);
       }
     } catch {
       // fall through
     }
   }
-  const projectsFile = join(homedir(), ".octogent", "projects.json");
+  const projectsFile = join(homedir(), ".hydra", "projects.json");
   if (existsSync(projectsFile)) {
     try {
       const registry = JSON.parse(readFileSync(projectsFile, "utf-8"));
       const project = registry.projects?.find((p) => p.path === workspaceCwd);
       if (project) {
         if (typeof project.id === "string" && project.id.trim().length > 0) {
-          return join(homedir(), ".octogent", "projects", project.id);
+          return join(homedir(), ".hydra", "projects", project.id);
         }
         if (typeof project.name === "string" && project.name.trim().length > 0) {
-          return join(homedir(), ".octogent", "projects", project.name);
+          return join(homedir(), ".hydra", "projects", project.name);
         }
       }
     } catch {
       // fall through
     }
   }
-  return `${workspaceCwd}/.octogent`;
+  return `${workspaceCwd}/.hydra`;
 };
 
-const workspaceCwd = process.env.OCTOGENT_WORKSPACE_CWD ?? monorepoRoot;
+const workspaceCwd = process.env.HYDRA_WORKSPACE_CWD ?? monorepoRoot;
 const projectStateDir = resolveProjectStateDir(workspaceCwd);
 
 const child = spawn(
   pnpmCommand,
-  ["-r", "--parallel", "--filter", "@octogent/api", "--filter", "@octogent/web", "dev"],
+  ["-r", "--parallel", "--filter", "@hydra/api", "--filter", "@hydra/web", "dev"],
   {
     stdio: "inherit",
     env: {
       ...process.env,
-      OCTOGENT_API_PORT: String(apiPort),
-      OCTOGENT_API_ORIGIN: apiOrigin,
-      OCTOGENT_WORKSPACE_CWD: workspaceCwd,
-      OCTOGENT_PROJECT_STATE_DIR: projectStateDir,
-      OCTOGENT_PROMPTS_DIR: process.env.OCTOGENT_PROMPTS_DIR ?? `${monorepoRoot}/prompts`,
+      HYDRA_API_PORT: String(apiPort),
+      HYDRA_API_ORIGIN: apiOrigin,
+      HYDRA_WORKSPACE_CWD: workspaceCwd,
+      HYDRA_PROJECT_STATE_DIR: projectStateDir,
+      HYDRA_PROMPTS_DIR: process.env.HYDRA_PROMPTS_DIR ?? `${monorepoRoot}/prompts`,
     },
   },
 );

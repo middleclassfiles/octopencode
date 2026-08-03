@@ -1,10 +1,11 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-import type { DeckAvailableSkill } from "@octogent/core";
+import type { DeckAvailableSkill } from "@hydra/core";
 
-const SKILL_MARKER_START = "<!-- octogent:suggested-skills:start -->";
-const SKILL_MARKER_END = "<!-- octogent:suggested-skills:end -->";
+const SKILL_MARKER_START = "<!-- hydra:suggested-skills:start -->";
+const SKILL_MARKER_END = "<!-- hydra:suggested-skills:end -->";
 const FRONT_MATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?/;
 const H1_PATTERN = /^#\s+(.+)$/m;
 
@@ -95,9 +96,13 @@ const listSkillDefinitionFiles = (skillsRoot: string): string[] => {
   return definitions;
 };
 
-export const readAvailableClaudeSkills = (workspaceCwd: string): DeckAvailableSkill[] => {
+export const readAvailableOpencodeSkills = (workspaceCwd: string): DeckAvailableSkill[] => {
   const roots: Array<{ path: string; source: DeckAvailableSkill["source"] }> = [
-    { path: join(workspaceCwd, ".claude", "skills"), source: "project" },
+    { path: join(workspaceCwd, ".opencode", "skills"), source: "project" },
+    {
+      path: join(process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "opencode", "skills"),
+      source: "user",
+    },
   ];
 
   const seen = new Map<string, DeckAvailableSkill>();

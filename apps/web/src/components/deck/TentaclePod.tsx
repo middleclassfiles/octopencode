@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import type { DeckAvailableSkill, DeckTentacleSummary } from "@octogent/core";
+import type { DeckAvailableSkill, DeckTentacleSummary } from "@hydra/core";
 import { OctopusGlyph } from "../EmptyOctopus";
 import type { OctopusVisuals } from "./octopusVisuals";
 
@@ -217,7 +217,7 @@ export const TentaclePod = ({
           {isEditingSkills && (
             <div className="deck-pod-skills-editor">
               {skillNames.length === 0 ? (
-                <span className="deck-pod-skills-empty">No Claude Code skills found.</span>
+                <span className="deck-pod-skills-empty">No opencode skills found.</span>
               ) : (
                 <div className="deck-pod-skills-options">
                   {skillNames.map((skillName) => {

@@ -1,8 +1,7 @@
-import type { UsageChartResponse } from "../claudeSessionScanner";
-import type { ClaudeUsageSnapshot } from "../claudeUsage";
-import type { CodexUsageSnapshot } from "../codexUsage";
 import type { GitHubRepoSummarySnapshot } from "../githubRepoSummary";
 import type { MonitorService } from "../monitor";
+import type { UsageChartResponse } from "../opencodeSessionScanner";
+import type { OpencodeUsageSnapshot } from "../opencodeUsage";
 import type { GitClient } from "../terminalRuntime";
 
 export type CreateApiServerOptions = {
@@ -12,13 +11,10 @@ export type CreateApiServerOptions = {
   webDistDir?: string | undefined;
   apiBaseUrl?: string | undefined;
   gitClient?: GitClient;
-  readClaudeUsageSnapshot?: () => Promise<ClaudeUsageSnapshot>;
-  readClaudeOauthUsageSnapshot?: () => Promise<ClaudeUsageSnapshot>;
-  readClaudeCliUsageSnapshot?: () => Promise<ClaudeUsageSnapshot>;
-  readCodexUsageSnapshot?: () => Promise<CodexUsageSnapshot>;
+  readOpencodeUsageSnapshot?: () => Promise<OpencodeUsageSnapshot>;
   readGithubRepoSummary?: () => Promise<GitHubRepoSummarySnapshot>;
   scanUsageHeatmap?: (scope: "all" | "project") => Promise<UsageChartResponse>;
   monitorService?: MonitorService;
-  invalidateClaudeUsageCache?: () => void;
+  invalidateOpencodeUsageCache?: () => void;
   allowRemoteAccess?: boolean;
 };

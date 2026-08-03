@@ -1,6 +1,6 @@
 # Contributing
 
-Octogent is an experimental personal project and is not actively reviewing pull requests right now. If you still open one, keep changes small, test-backed, and easy to review.
+Hydra is an experimental personal project and is not actively reviewing pull requests right now. If you still open one, keep changes small, test-backed, and easy to review.
 
 ## Before you change anything
 

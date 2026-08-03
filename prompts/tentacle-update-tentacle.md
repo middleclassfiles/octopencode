@@ -4,7 +4,7 @@ Do NOT edit any files until you have presented your proposed changes and the ope
 
 ## Process
 
-1. Read every markdown file under `.octogent/tentacles/{{tentacleId}}/`, including `todo.md` and `CONTEXT.md`.
+1. Read every markdown file under `.hydra/tentacles/{{tentacleId}}/`, including `todo.md` and `CONTEXT.md`.
 2. Read the relevant source code for the areas this tentacle owns.
 3. Produce a structured maintenance report that covers:
    - **Todo cleanup** — duplicates, obsolete tasks, priority changes, and missing work.

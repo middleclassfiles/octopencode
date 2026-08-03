@@ -4,32 +4,36 @@ import { describe, expect, it } from "vitest";
 import { RuntimeStatusStrip } from "../src/components/RuntimeStatusStrip";
 
 describe("RuntimeStatusStrip", () => {
-  it("shows loading placeholders before claude usage loads", () => {
-    render(<RuntimeStatusStrip sparklinePoints="" usageData={null} claudeUsage={null} />);
+  it("shows loading placeholders before opencode usage loads", () => {
+    render(<RuntimeStatusStrip sparklinePoints="" usageData={null} opencodeUsage={null} />);
 
-    const usage = screen.getByLabelText("Claude usage limits");
+    const usage = screen.getByLabelText("Opencode usage limits");
     expect(within(usage).getAllByText("···")).toHaveLength(2);
   });
 
-  it("uses a 5h label for oauth-backed usage", () => {
+  it("shows today cost and session count for local-db-backed usage", () => {
     render(
       <RuntimeStatusStrip
         sparklinePoints=""
         usageData={null}
-        claudeUsage={{
+        opencodeUsage={{
           status: "ok",
-          source: "oauth-api",
+          source: "local-db",
           fetchedAt: "2026-04-09T10:00:00.000Z",
-          primaryUsedPercent: 14,
-          secondaryUsedPercent: 52,
+          sessionCount: 3,
+          costToday: 0.12,
+          cost7d: 1.5,
+          cost30d: 5.2,
+          tokensToday: 150000,
+          tokens7d: 1900000,
+          tokens30d: 6800000,
         }}
       />,
     );
 
-    const usage = screen.getByLabelText("Claude usage limits");
-    expect(within(usage).getByText("5h")).toBeInTheDocument();
-    expect(within(usage).getByText("14%")).toBeInTheDocument();
-    expect(within(usage).getByText("52%")).toBeInTheDocument();
+    const usage = screen.getByLabelText("Opencode usage limits");
+    expect(within(usage).getByText("$0.12 · 3 sessions")).toBeInTheDocument();
+    expect(within(usage).getByText("$1.50")).toBeInTheDocument();
   });
 
   it("shows unavailable values instead of a permanent loading state", () => {
@@ -37,32 +41,39 @@ describe("RuntimeStatusStrip", () => {
       <RuntimeStatusStrip
         sparklinePoints=""
         usageData={null}
-        claudeUsage={{
+        opencodeUsage={{
           status: "unavailable",
           source: "none",
           fetchedAt: "2026-04-09T10:00:00.000Z",
-          message: "Claude credentials not found. Run `claude login`.",
+          sessionCount: 0,
+          costToday: null,
+          cost7d: null,
+          cost30d: null,
+          tokensToday: null,
+          tokens7d: null,
+          tokens30d: null,
+          message: "No opencode sessions found.",
         }}
       />,
     );
 
-    const usage = screen.getByLabelText("Claude usage limits");
+    const usage = screen.getByLabelText("Opencode usage limits");
     expect(within(usage).getAllByText("NA")).toHaveLength(2);
     expect(within(usage).queryByText("···")).toBeNull();
   });
 
-  it("marks the refresh button as rotating while Claude usage is refreshing", () => {
+  it("marks the refresh button as rotating while opencode usage is refreshing", () => {
     render(
       <RuntimeStatusStrip
         sparklinePoints=""
         usageData={null}
-        claudeUsage={null}
-        isRefreshingClaudeUsage
-        onRefreshClaudeUsage={() => {}}
+        opencodeUsage={null}
+        isRefreshingOpencodeUsage
+        onRefreshOpencodeUsage={() => {}}
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Refresh Claude usage" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Refresh opencode usage" })).toHaveAttribute(
       "data-refreshing",
       "true",
     );

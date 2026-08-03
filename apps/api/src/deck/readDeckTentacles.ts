@@ -14,17 +14,17 @@ import type {
   DeckOctopusAppearance,
   DeckTentacleStatus,
   DeckTentacleSummary,
-} from "@octogent/core";
+} from "@hydra/core";
 
 import {
   applySuggestedSkillsToContext,
   parseSuggestedSkillsFromContext,
-  readAvailableClaudeSkills,
-} from "../claudeSkills";
+  readAvailableOpencodeSkills,
+} from "../opencodeSkills";
 import { markTentaclesInitialized } from "../setupState";
 
-const TENTACLES_DIR = ".octogent/tentacles";
-const DECK_STATE_PATH = ".octogent/state/deck.json";
+const TENTACLES_DIR = ".hydra/tentacles";
+const DECK_STATE_PATH = ".hydra/state/deck.json";
 
 const VALID_STATUSES: ReadonlySet<string> = new Set(["idle", "active", "blocked", "needs-review"]);
 
@@ -185,7 +185,7 @@ export const readDeckTentacles = (
     return [];
   }
 
-  const deckState = readDeckState(projectStateDir ?? join(workspaceCwd, ".octogent"));
+  const deckState = readDeckState(projectStateDir ?? join(workspaceCwd, ".hydra"));
   const results: DeckTentacleSummary[] = [];
 
   for (const entry of entries) {
@@ -482,7 +482,7 @@ export const createDeckTentacle = (
   input: CreateDeckTentacleInput,
   projectStateDir?: string,
 ): CreateDeckTentacleResult => {
-  const stateDir = projectStateDir ?? join(workspaceCwd, ".octogent");
+  const stateDir = projectStateDir ?? join(workspaceCwd, ".hydra");
   const name = input.name.trim();
   if (name.length === 0) {
     return { ok: false, error: "Name is required" };
@@ -539,7 +539,7 @@ export const createDeckTentacle = (
 };
 
 export const listDeckAvailableSkills = (workspaceCwd: string): DeckAvailableSkill[] =>
-  readAvailableClaudeSkills(workspaceCwd);
+  readAvailableOpencodeSkills(workspaceCwd);
 
 export const updateDeckTentacleSuggestedSkills = (
   workspaceCwd: string,
@@ -574,7 +574,7 @@ export const deleteDeckTentacle = (
   tentacleId: string,
   projectStateDir?: string,
 ): { ok: true } | { ok: false; error: string } => {
-  const stateDir = projectStateDir ?? join(workspaceCwd, ".octogent");
+  const stateDir = projectStateDir ?? join(workspaceCwd, ".hydra");
   if (tentacleId.includes("..") || tentacleId.includes("/")) {
     return { ok: false, error: "Invalid tentacle ID" };
   }

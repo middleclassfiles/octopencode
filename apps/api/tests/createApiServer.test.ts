@@ -326,7 +326,7 @@ class FakeGitClient implements GitClient {
     const nextNumber = (this.pullRequestByCwd.get(cwd)?.number ?? 100) + 1;
     const pullRequest = {
       number: nextNumber,
-      url: `https://github.com/hesamsheikh/octogent/pull/${nextNumber}`,
+      url: `https://github.com/hesamsheikh/hydra/pull/${nextNumber}`,
       title,
       baseRef,
       headRef,
@@ -411,7 +411,7 @@ describe("createApiServer", () => {
     const workspaceCwd =
       options.workspaceCwd ??
       (() => {
-        const directory = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+        const directory = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
         temporaryDirectories.push(directory);
         return directory;
       })();
@@ -434,7 +434,7 @@ describe("createApiServer", () => {
     workspaceCwd: string,
     predicate: (document: TDocument) => boolean,
   ): Promise<TDocument> => {
-    const registryPath = join(workspaceCwd, ".octogent", "state", "tentacles.json");
+    const registryPath = join(workspaceCwd, ".hydra", "state", "tentacles.json");
     const timeoutAt = Date.now() + 2_000;
 
     while (Date.now() < timeoutAt) {
@@ -456,7 +456,7 @@ describe("createApiServer", () => {
     sessionId: string,
     events: unknown[],
   ) => {
-    const transcriptDirectory = join(workspaceCwd, ".octogent", "state", "transcripts");
+    const transcriptDirectory = join(workspaceCwd, ".hydra", "state", "transcripts");
     mkdirSync(transcriptDirectory, { recursive: true });
     const transcriptPath = join(transcriptDirectory, `${encodeURIComponent(sessionId)}.jsonl`);
     writeFileSync(
@@ -466,7 +466,7 @@ describe("createApiServer", () => {
     );
   };
 
-  const writeClaudeTurns = (
+  const writeOpencodeTurns = (
     workspaceCwd: string,
     sessionId: string,
     turns: Array<{
@@ -477,11 +477,11 @@ describe("createApiServer", () => {
       endedAt: string;
     }>,
   ) => {
-    const transcriptDirectory = join(workspaceCwd, ".octogent", "state", "transcripts");
+    const transcriptDirectory = join(workspaceCwd, ".hydra", "state", "transcripts");
     mkdirSync(transcriptDirectory, { recursive: true });
     const turnsPath = join(
       transcriptDirectory,
-      `${encodeURIComponent(sessionId)}.claude-turns.json`,
+      `${encodeURIComponent(sessionId)}.opencode-turns.json`,
     );
     writeFileSync(turnsPath, JSON.stringify(turns), "utf8");
   };
@@ -501,7 +501,7 @@ describe("createApiServer", () => {
   });
 
   it("returns session summaries for GET /api/conversations", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     writeConversationTranscript(workspaceCwd, "terminal-1", [
       {
@@ -522,7 +522,7 @@ describe("createApiServer", () => {
         timestamp: "2026-03-05T10:00:04.000Z",
       },
     ]);
-    writeClaudeTurns(workspaceCwd, "terminal-1", [
+    writeOpencodeTurns(workspaceCwd, "terminal-1", [
       {
         turnId: "turn-1",
         role: "user",
@@ -570,7 +570,7 @@ describe("createApiServer", () => {
   });
 
   it("returns assembled conversation details and export payloads", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     writeConversationTranscript(workspaceCwd, "terminal-2-agent-1", [
       {
@@ -581,7 +581,7 @@ describe("createApiServer", () => {
         timestamp: "2026-03-05T11:00:00.000Z",
       },
     ]);
-    writeClaudeTurns(workspaceCwd, "terminal-2-agent-1", [
+    writeOpencodeTurns(workspaceCwd, "terminal-2-agent-1", [
       {
         turnId: "turn-1",
         role: "user",
@@ -655,7 +655,7 @@ describe("createApiServer", () => {
   });
 
   it("returns 400 for unsupported conversation export format", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     writeConversationTranscript(workspaceCwd, "terminal-3-agent-1", [
       {
@@ -803,23 +803,25 @@ describe("createApiServer", () => {
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("returns codex usage snapshot for GET /api/codex/usage", async () => {
-    const codexSnapshot = {
+  it("returns opencode usage snapshot for GET /api/opencode/usage", async () => {
+    const opencodeSnapshot = {
       status: "ok",
-      source: "oauth-api",
-      fetchedAt: "2026-02-25T12:00:00.000Z",
-      planType: "pro",
-      primaryUsedPercent: 12,
-      secondaryUsedPercent: 28,
-      creditsBalance: 88.5,
-      creditsUnlimited: false,
+      source: "local-db",
+      fetchedAt: "2026-08-04T12:00:00.000Z",
+      sessionCount: 3,
+      costToday: 0.42,
+      cost7d: 2.1,
+      cost30d: 9.8,
+      tokensToday: 12_000,
+      tokens7d: 85_000,
+      tokens30d: 410_000,
     } as const;
 
     const baseUrl = await startServer({
-      readCodexUsageSnapshot: async () => codexSnapshot,
+      readOpencodeUsageSnapshot: async () => opencodeSnapshot,
     });
 
-    const response = await fetch(`${baseUrl}/api/codex/usage`, {
+    const response = await fetch(`${baseUrl}/api/opencode/usage`, {
       method: "GET",
       headers: {
         Accept: "application/json",
@@ -827,85 +829,7 @@ describe("createApiServer", () => {
     });
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual(codexSnapshot);
-  });
-
-  it("returns claude usage snapshot for GET /api/claude/usage", async () => {
-    const claudeSnapshot = {
-      status: "ok",
-      source: "oauth-api",
-      fetchedAt: "2026-03-03T12:00:00.000Z",
-      planType: "pro",
-      primaryUsedPercent: 11,
-      primaryResetAt: "2026-03-03T15:00:00.000Z",
-      secondaryUsedPercent: 27,
-      secondaryResetAt: "2026-03-05T00:00:00.000Z",
-      sonnetUsedPercent: 19,
-      sonnetResetAt: "2026-03-05T00:00:00.000Z",
-    } as const;
-
-    const baseUrl = await startServer({
-      readClaudeUsageSnapshot: async () => claudeSnapshot,
-    });
-
-    const response = await fetch(`${baseUrl}/api/claude/usage`, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
-    });
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual(claudeSnapshot);
-  });
-
-  it("returns oauth claude usage snapshot for GET /api/claude/usage/oauth", async () => {
-    const claudeSnapshot = {
-      status: "ok",
-      source: "oauth-api",
-      fetchedAt: "2026-03-03T12:00:00.000Z",
-      primaryUsedPercent: 11,
-      secondaryUsedPercent: 27,
-    } as const;
-
-    const baseUrl = await startServer({
-      readClaudeOauthUsageSnapshot: async () => claudeSnapshot,
-    });
-
-    const response = await fetch(`${baseUrl}/api/claude/usage/oauth`, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
-    });
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual(claudeSnapshot);
-  });
-
-  it("returns cli claude usage snapshot for GET /api/claude/usage/cli", async () => {
-    const claudeSnapshot = {
-      status: "ok",
-      source: "cli-pty",
-      fetchedAt: "2026-03-03T12:00:00.000Z",
-      primaryUsedPercent: 9,
-      secondaryUsedPercent: 22,
-      sonnetUsedPercent: 14,
-    } as const;
-
-    const baseUrl = await startServer({
-      readClaudeCliUsageSnapshot: async () => claudeSnapshot,
-    });
-
-    const response = await fetch(`${baseUrl}/api/claude/usage/cli`, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
-    });
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual(claudeSnapshot);
+    await expect(response.json()).resolves.toEqual(opencodeSnapshot);
   });
 
   it("returns github summary for GET /api/github/summary", async () => {
@@ -913,7 +837,7 @@ describe("createApiServer", () => {
       status: "ok",
       fetchedAt: "2026-02-27T12:00:00.000Z",
       source: "gh-cli",
-      repo: "hesamsheikh/octogent",
+      repo: "hesamsheikh/hydra",
       stargazerCount: 42,
       openIssueCount: 7,
       openPullRequestCount: 3,
@@ -953,103 +877,58 @@ describe("createApiServer", () => {
     await expect(response.json()).resolves.toEqual(githubSummary);
   });
 
-  it("returns 405 for unsupported methods on /api/codex/usage", async () => {
+  it("returns 405 for unsupported methods on /api/opencode/usage", async () => {
     const baseUrl = await startServer({
-      readCodexUsageSnapshot: async () => ({
+      readOpencodeUsageSnapshot: async () => ({
         status: "unavailable",
         source: "none",
-        fetchedAt: "2026-02-25T12:00:00.000Z",
+        fetchedAt: "2026-08-04T12:00:00.000Z",
       }),
     });
 
-    const response = await fetch(`${baseUrl}/api/codex/usage`, {
+    const response = await fetch(`${baseUrl}/api/opencode/usage`, {
       method: "POST",
     });
 
     expect(response.status).toBe(405);
   });
 
-  it("returns 405 for unsupported methods on /api/claude/usage", async () => {
-    const baseUrl = await startServer({
-      readClaudeUsageSnapshot: async () => ({
-        status: "unavailable",
-        source: "none",
-        fetchedAt: "2026-03-03T12:00:00.000Z",
-      }),
-    });
-
-    const response = await fetch(`${baseUrl}/api/claude/usage`, {
-      method: "POST",
-    });
-
-    expect(response.status).toBe(405);
-  });
-
-  it("returns 405 for unsupported methods on /api/claude/usage/oauth", async () => {
-    const baseUrl = await startServer({
-      readClaudeOauthUsageSnapshot: async () => ({
-        status: "unavailable",
-        source: "none",
-        fetchedAt: "2026-03-03T12:00:00.000Z",
-      }),
-    });
-
-    const response = await fetch(`${baseUrl}/api/claude/usage/oauth`, {
-      method: "POST",
-    });
-
-    expect(response.status).toBe(405);
-  });
-
-  it("returns 405 for unsupported methods on /api/claude/usage/cli", async () => {
-    const baseUrl = await startServer({
-      readClaudeCliUsageSnapshot: async () => ({
-        status: "unavailable",
-        source: "none",
-        fetchedAt: "2026-03-03T12:00:00.000Z",
-      }),
-    });
-
-    const response = await fetch(`${baseUrl}/api/claude/usage/cli`, {
-      method: "POST",
-    });
-
-    expect(response.status).toBe(405);
-  });
-
-  it("POST /api/hooks/session-start invalidates claude usage cache", async () => {
+  it("POST /api/hooks/session-start invalidates opencode usage cache", async () => {
     let callCount = 0;
-    const readClaudeUsageSnapshot = async () => {
+    const readOpencodeUsageSnapshot = async () => {
       callCount++;
       return {
         status: "ok" as const,
-        source: "oauth-api" as const,
-        fetchedAt: "2026-03-03T12:00:00.000Z",
-        planType: "pro",
-        primaryUsedPercent: callCount * 10,
-        secondaryUsedPercent: 50,
-        sonnetUsedPercent: 30,
+        source: "local-db" as const,
+        fetchedAt: "2026-08-04T12:00:00.000Z",
+        sessionCount: callCount,
+        costToday: callCount * 0.1,
+        cost7d: callCount,
+        cost30d: callCount * 10,
+        tokensToday: callCount * 10_000,
+        tokens7d: callCount * 50_000,
+        tokens30d: callCount * 200_000,
       };
     };
 
     const invalidateCalls: number[] = [];
-    const invalidateClaudeUsageCache = () => {
+    const invalidateOpencodeUsageCache = () => {
       invalidateCalls.push(Date.now());
     };
 
     const baseUrl = await startServer({
-      readClaudeUsageSnapshot,
-      invalidateClaudeUsageCache,
+      readOpencodeUsageSnapshot,
+      invalidateOpencodeUsageCache,
     });
 
     // First GET — callCount becomes 1
-    const first = await fetch(`${baseUrl}/api/claude/usage`, {
+    const first = await fetch(`${baseUrl}/api/opencode/usage`, {
       method: "GET",
       headers: { Accept: "application/json" },
     });
     expect(first.status).toBe(200);
-    const firstBody = (await first.json()) as { primaryUsedPercent: number };
-    expect(firstBody.primaryUsedPercent).toBe(10);
+    const firstBody = (await first.json()) as { sessionCount: number };
+    expect(firstBody.sessionCount).toBe(1);
 
     // POST hook — should invalidate and warm cache
     const hookResponse = await fetch(`${baseUrl}/api/hooks/session-start`, {
@@ -1061,14 +940,14 @@ describe("createApiServer", () => {
     expect(invalidateCalls.length).toBe(1);
 
     // Next GET triggers a fresh read (callCount incremented again)
-    const second = await fetch(`${baseUrl}/api/claude/usage`, {
+    const second = await fetch(`${baseUrl}/api/opencode/usage`, {
       method: "GET",
       headers: { Accept: "application/json" },
     });
     expect(second.status).toBe(200);
-    const secondBody = (await second.json()) as { primaryUsedPercent: number };
+    const secondBody = (await second.json()) as { sessionCount: number };
     // callCount > 2 confirms the warm call + this GET both invoked the reader
-    expect(secondBody.primaryUsedPercent).toBeGreaterThan(10);
+    expect(secondBody.sessionCount).toBeGreaterThan(1);
   });
 
   it("POST /api/hooks/user-prompt-submit auto-renames generated default terminal names", async () => {
@@ -1083,7 +962,7 @@ describe("createApiServer", () => {
     expect(createResponse.status).toBe(201);
 
     const hookResponse = await fetch(
-      `${baseUrl}/api/hooks/user-prompt-submit?octogent_session=terminal-1`,
+      `${baseUrl}/api/hooks/user-prompt-submit?hydra_session=terminal-1`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1093,7 +972,7 @@ describe("createApiServer", () => {
     expect(hookResponse.status).toBe(200);
 
     const secondHookResponse = await fetch(
-      `${baseUrl}/api/hooks/user-prompt-submit?octogent_session=terminal-1`,
+      `${baseUrl}/api/hooks/user-prompt-submit?hydra_session=terminal-1`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1133,7 +1012,7 @@ describe("createApiServer", () => {
     expect(createResponse.status).toBe(201);
 
     const hookResponse = await fetch(
-      `${baseUrl}/api/hooks/user-prompt-submit?octogent_session=terminal-1`,
+      `${baseUrl}/api/hooks/user-prompt-submit?hydra_session=terminal-1`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1160,10 +1039,10 @@ describe("createApiServer", () => {
   });
 
   it("infers generated terminal names from older registry entries", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
-    const registryPath = join(workspaceCwd, ".octogent", "state", "tentacles.json");
-    mkdirSync(join(workspaceCwd, ".octogent", "state"), { recursive: true });
+    const registryPath = join(workspaceCwd, ".hydra", "state", "tentacles.json");
+    mkdirSync(join(workspaceCwd, ".hydra", "state"), { recursive: true });
     writeFileSync(
       registryPath,
       `${JSON.stringify(
@@ -1173,7 +1052,7 @@ describe("createApiServer", () => {
             {
               terminalId: "terminal-1",
               tentacleId: "terminal-1",
-              tentacleName: "Octogent Terminal 1",
+              tentacleName: "Hydra Terminal 1",
               createdAt: "2026-04-10T10:00:00.000Z",
               workspaceMode: "shared",
             },
@@ -1189,7 +1068,7 @@ describe("createApiServer", () => {
     const baseUrl = await startServer({ workspaceCwd });
 
     const hookResponse = await fetch(
-      `${baseUrl}/api/hooks/user-prompt-submit?octogent_session=terminal-1`,
+      `${baseUrl}/api/hooks/user-prompt-submit?hydra_session=terminal-1`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1243,7 +1122,7 @@ describe("createApiServer", () => {
   });
 
   it("reports file-backed workspace setup status and updates it through setup actions", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const baseUrl = await startServer({ workspaceCwd });
 
@@ -1257,7 +1136,7 @@ describe("createApiServer", () => {
       hasAnyTentacles: boolean;
       steps: Array<{ id: string; complete: boolean }>;
     };
-    expect(existsSync(join(workspaceCwd, ".octogent"))).toBe(false);
+    expect(existsSync(join(workspaceCwd, ".hydra"))).toBe(false);
     expect(existsSync(join(workspaceCwd, ".gitignore"))).toBe(false);
     expect(initialPayload.isFirstRun).toBe(true);
     expect(initialPayload.shouldShowSetupCard).toBe(true);
@@ -1275,16 +1154,16 @@ describe("createApiServer", () => {
       headers: { Accept: "application/json" },
     });
     expect(initializeResponse.status).toBe(200);
-    expect(existsSync(join(workspaceCwd, ".octogent", "project.json"))).toBe(true);
-    expect(existsSync(join(workspaceCwd, ".octogent", "tentacles"))).toBe(true);
-    expect(existsSync(join(workspaceCwd, ".octogent", "worktrees"))).toBe(true);
+    expect(existsSync(join(workspaceCwd, ".hydra", "project.json"))).toBe(true);
+    expect(existsSync(join(workspaceCwd, ".hydra", "tentacles"))).toBe(true);
+    expect(existsSync(join(workspaceCwd, ".hydra", "worktrees"))).toBe(true);
 
     const gitignoreResponse = await fetch(`${baseUrl}/api/setup/steps/ensure-gitignore`, {
       method: "POST",
       headers: { Accept: "application/json" },
     });
     expect(gitignoreResponse.status).toBe(200);
-    expect(readFileSync(join(workspaceCwd, ".gitignore"), "utf8")).toContain(".octogent");
+    expect(readFileSync(join(workspaceCwd, ".gitignore"), "utf8")).toContain(".hydra");
 
     const createTentacleResponse = await fetch(`${baseUrl}/api/deck/tentacles`, {
       method: "POST",
@@ -1362,10 +1241,10 @@ describe("createApiServer", () => {
     });
   });
 
-  it("lists Claude skills from the project skills folder", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+  it("lists opencode skills from the project skills folder", async () => {
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
-    const projectSkillDir = join(workspaceCwd, ".claude", "skills", "docs-writer");
+    const projectSkillDir = join(workspaceCwd, ".opencode", "skills", "docs-writer");
     mkdirSync(projectSkillDir, { recursive: true });
     writeFileSync(
       join(projectSkillDir, "SKILL.md"),
@@ -1401,9 +1280,9 @@ describe("createApiServer", () => {
   });
 
   it("ignores a root project skills SKILL.md file and only lists folder-based skills", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
-    const skillsDir = join(workspaceCwd, ".claude", "skills");
+    const skillsDir = join(workspaceCwd, ".opencode", "skills");
     mkdirSync(skillsDir, { recursive: true });
     writeFileSync(
       join(skillsDir, "SKILL.md"),
@@ -1447,7 +1326,7 @@ describe("createApiServer", () => {
   });
 
   it("creates tentacles with suggested skills and appends the managed context block", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const baseUrl = await startServer({ workspaceCwd });
 
@@ -1473,7 +1352,7 @@ describe("createApiServer", () => {
     );
 
     const context = readFileSync(
-      join(workspaceCwd, ".octogent", "tentacles", "docs", "CONTEXT.md"),
+      join(workspaceCwd, ".hydra", "tentacles", "docs", "CONTEXT.md"),
       "utf8",
     );
     expect(context).toContain("## Suggested Skills");
@@ -1496,7 +1375,7 @@ describe("createApiServer", () => {
   });
 
   it("updates tentacle suggested skills and removes the managed context block when cleared", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const baseUrl = await startServer({ workspaceCwd });
 
@@ -1532,7 +1411,7 @@ describe("createApiServer", () => {
       }),
     );
 
-    const contextPath = join(workspaceCwd, ".octogent", "tentacles", "docs", "CONTEXT.md");
+    const contextPath = join(workspaceCwd, ".hydra", "tentacles", "docs", "CONTEXT.md");
     expect(readFileSync(contextPath, "utf8")).toContain("- `code-review-specialist`");
 
     const clearResponse = await fetch(`${baseUrl}/api/deck/tentacles/docs/skills`, {
@@ -1554,7 +1433,7 @@ describe("createApiServer", () => {
       }),
     );
     expect(readFileSync(contextPath, "utf8")).not.toContain("## Suggested Skills");
-    expect(readFileSync(contextPath, "utf8")).not.toContain("octogent:suggested-skills:start");
+    expect(readFileSync(contextPath, "utf8")).not.toContain("hydra:suggested-skills:start");
   });
 
   it("returns 400 for unsupported tentacle completion sound values", async () => {
@@ -1578,7 +1457,7 @@ describe("createApiServer", () => {
   });
 
   it("restores ui state across API restarts using persisted registry", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
 
     const firstBaseUrl = await startServer({
@@ -1606,10 +1485,8 @@ describe("createApiServer", () => {
         isRuntimeStatusStripVisible: false,
         isMonitorVisible: false,
         isBottomTelemetryVisible: false,
-        isCodexUsageVisible: false,
-        isClaudeUsageVisible: false,
-        isClaudeUsageSectionExpanded: false,
-        isCodexUsageSectionExpanded: false,
+        isOpencodeUsageVisible: false,
+        isOpencodeUsageSectionExpanded: false,
         terminalCompletionSound: "double-beep",
         minimizedTerminalIds: ["terminal-1"],
         terminalWidths: {
@@ -1625,10 +1502,8 @@ describe("createApiServer", () => {
       isRuntimeStatusStripVisible: false,
       isMonitorVisible: false,
       isBottomTelemetryVisible: false,
-      isCodexUsageVisible: false,
-      isClaudeUsageVisible: false,
-      isClaudeUsageSectionExpanded: false,
-      isCodexUsageSectionExpanded: false,
+      isOpencodeUsageVisible: false,
+      isOpencodeUsageSectionExpanded: false,
       terminalCompletionSound: "double-beep",
       minimizedTerminalIds: ["terminal-1"],
       terminalWidths: {
@@ -1660,10 +1535,8 @@ describe("createApiServer", () => {
       isRuntimeStatusStripVisible: false,
       isMonitorVisible: false,
       isBottomTelemetryVisible: false,
-      isCodexUsageVisible: false,
-      isClaudeUsageVisible: false,
-      isClaudeUsageSectionExpanded: false,
-      isCodexUsageSectionExpanded: false,
+      isOpencodeUsageVisible: false,
+      isOpencodeUsageSectionExpanded: false,
       terminalCompletionSound: "double-beep",
       minimizedTerminalIds: ["terminal-1"],
       terminalWidths: {
@@ -1710,7 +1583,7 @@ describe("createApiServer", () => {
         label: "terminal-2",
         state: "live",
         tentacleId: "terminal-2",
-        tentacleName: "Octogent Terminal 1",
+        tentacleName: "Hydra Terminal 1",
         workspaceMode: "shared",
       }),
     );
@@ -1800,10 +1673,10 @@ describe("createApiServer", () => {
   });
 
   it("ignores stale persisted nextTentacleNumber values and starts from the minimum available id", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
-    const registryPath = join(workspaceCwd, ".octogent", "state", "tentacles.json");
-    mkdirSync(join(workspaceCwd, ".octogent", "state"), { recursive: true });
+    const registryPath = join(workspaceCwd, ".hydra", "state", "tentacles.json");
+    mkdirSync(join(workspaceCwd, ".hydra", "state"), { recursive: true });
     writeFileSync(
       registryPath,
       `${JSON.stringify(
@@ -1837,9 +1710,9 @@ describe("createApiServer", () => {
   });
 
   it("skips tentacle ids that already have an existing worktree directory", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
-    mkdirSync(join(workspaceCwd, ".octogent", "worktrees", "terminal-1"), {
+    mkdirSync(join(workspaceCwd, ".hydra", "worktrees", "terminal-1"), {
       recursive: true,
     });
 
@@ -1862,7 +1735,7 @@ describe("createApiServer", () => {
   });
 
   it("persists tentacle metadata without runtime bootstrap flags", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const baseUrl = await startServer({
       workspaceCwd,
@@ -1904,7 +1777,7 @@ describe("createApiServer", () => {
   });
 
   it("marks auto-started prompted terminals as active immediately", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const baseUrl = await startServer({
       workspaceCwd,
@@ -1935,10 +1808,10 @@ describe("createApiServer", () => {
   });
 
   it("injects a default tentacle context prompt for tentacle terminals", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
-    const tentacleDir = join(workspaceCwd, ".octogent", "tentacles", "docs");
-    const relativeTentacleDir = ".octogent/tentacles/docs";
+    const tentacleDir = join(workspaceCwd, ".hydra", "tentacles", "docs");
+    const relativeTentacleDir = ".hydra/tentacles/docs";
     const promptsDir = join(process.cwd(), "..", "..", "prompts");
     mkdirSync(tentacleDir, { recursive: true });
     writeFileSync(join(tentacleDir, "CONTEXT.md"), "# Docs\n\nDocumentation team.\n", "utf8");
@@ -2001,7 +1874,7 @@ describe("createApiServer", () => {
   });
 
   it("creates isolated worktree terminals with dedicated cwd", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2029,11 +1902,11 @@ describe("createApiServer", () => {
       }),
     );
 
-    const expectedWorktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const expectedWorktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     expect(gitClient.getWorktree(expectedWorktreePath)).toEqual(
       expect.objectContaining({
         cwd: workspaceCwd,
-        branchName: "octogent/terminal-1",
+        branchName: "hydra/terminal-1",
         baseRef: "HEAD",
       }),
     );
@@ -2064,7 +1937,7 @@ describe("createApiServer", () => {
   });
 
   it("returns git status for worktree tentacles", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2084,10 +1957,10 @@ describe("createApiServer", () => {
     });
     expect(createResponse.status).toBe(201);
 
-    const worktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const worktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     gitClient.setWorktreeStatus(worktreePath, {
-      branchName: "octogent/terminal-1",
-      upstreamBranchName: "origin/octogent/terminal-1",
+      branchName: "hydra/terminal-1",
+      upstreamBranchName: "origin/hydra/terminal-1",
       isDirty: true,
       aheadCount: 2,
       behindCount: 1,
@@ -2108,8 +1981,8 @@ describe("createApiServer", () => {
     await expect(statusResponse.json()).resolves.toEqual({
       tentacleId: "terminal-1",
       workspaceMode: "worktree",
-      branchName: "octogent/terminal-1",
-      upstreamBranchName: "origin/octogent/terminal-1",
+      branchName: "hydra/terminal-1",
+      upstreamBranchName: "origin/hydra/terminal-1",
       isDirty: true,
       aheadCount: 2,
       behindCount: 1,
@@ -2145,7 +2018,7 @@ describe("createApiServer", () => {
   });
 
   it("commits pending worktree changes with a required message", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2165,10 +2038,10 @@ describe("createApiServer", () => {
     });
     expect(createResponse.status).toBe(201);
 
-    const worktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const worktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     gitClient.setWorktreeStatus(worktreePath, {
-      branchName: "octogent/terminal-1",
-      upstreamBranchName: "origin/octogent/terminal-1",
+      branchName: "hydra/terminal-1",
+      upstreamBranchName: "origin/hydra/terminal-1",
       isDirty: true,
       aheadCount: 0,
       behindCount: 0,
@@ -2194,8 +2067,8 @@ describe("createApiServer", () => {
     await expect(commitResponse.json()).resolves.toEqual({
       tentacleId: "terminal-1",
       workspaceMode: "worktree",
-      branchName: "octogent/terminal-1",
-      upstreamBranchName: "origin/octogent/terminal-1",
+      branchName: "hydra/terminal-1",
+      upstreamBranchName: "origin/hydra/terminal-1",
       isDirty: false,
       aheadCount: 1,
       behindCount: 0,
@@ -2208,7 +2081,7 @@ describe("createApiServer", () => {
   });
 
   it("returns 400 for commit when message is empty", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2228,7 +2101,7 @@ describe("createApiServer", () => {
     });
     expect(createResponse.status).toBe(201);
 
-    const worktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const worktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     const commitResponse = await fetch(`${baseUrl}/api/tentacles/terminal-1/git/commit`, {
       method: "POST",
       headers: {
@@ -2247,7 +2120,7 @@ describe("createApiServer", () => {
   });
 
   it("pushes worktree branch and updates ahead count", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2267,9 +2140,9 @@ describe("createApiServer", () => {
     });
     expect(createResponse.status).toBe(201);
 
-    const worktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const worktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     gitClient.setWorktreeStatus(worktreePath, {
-      branchName: "octogent/terminal-1",
+      branchName: "hydra/terminal-1",
       upstreamBranchName: null,
       isDirty: false,
       aheadCount: 3,
@@ -2292,8 +2165,8 @@ describe("createApiServer", () => {
     await expect(pushResponse.json()).resolves.toEqual({
       tentacleId: "terminal-1",
       workspaceMode: "worktree",
-      branchName: "octogent/terminal-1",
-      upstreamBranchName: "origin/octogent/terminal-1",
+      branchName: "hydra/terminal-1",
+      upstreamBranchName: "origin/hydra/terminal-1",
       isDirty: false,
       aheadCount: 0,
       behindCount: 0,
@@ -2306,7 +2179,7 @@ describe("createApiServer", () => {
   });
 
   it("syncs worktree branch with base ref", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2326,10 +2199,10 @@ describe("createApiServer", () => {
     });
     expect(createResponse.status).toBe(201);
 
-    const worktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const worktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     gitClient.setWorktreeStatus(worktreePath, {
-      branchName: "octogent/terminal-1",
-      upstreamBranchName: "origin/octogent/terminal-1",
+      branchName: "hydra/terminal-1",
+      upstreamBranchName: "origin/hydra/terminal-1",
       isDirty: false,
       aheadCount: 0,
       behindCount: 4,
@@ -2355,8 +2228,8 @@ describe("createApiServer", () => {
     await expect(syncResponse.json()).resolves.toEqual({
       tentacleId: "terminal-1",
       workspaceMode: "worktree",
-      branchName: "octogent/terminal-1",
-      upstreamBranchName: "origin/octogent/terminal-1",
+      branchName: "hydra/terminal-1",
+      upstreamBranchName: "origin/hydra/terminal-1",
       isDirty: false,
       aheadCount: 0,
       behindCount: 0,
@@ -2369,7 +2242,7 @@ describe("createApiServer", () => {
   });
 
   it("returns PR status for worktree tentacles", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2389,13 +2262,13 @@ describe("createApiServer", () => {
     });
     expect(createResponse.status).toBe(201);
 
-    const worktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const worktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     gitClient.setWorktreePullRequest(worktreePath, {
       number: 142,
-      url: "https://github.com/hesamsheikh/octogent/pull/142",
+      url: "https://github.com/hesamsheikh/hydra/pull/142",
       title: "feat: worktree git lifecycle menu",
       baseRef: "main",
-      headRef: "octogent/terminal-1",
+      headRef: "hydra/terminal-1",
       state: "OPEN",
       isDraft: false,
       mergeable: "MERGEABLE",
@@ -2414,10 +2287,10 @@ describe("createApiServer", () => {
       workspaceMode: "worktree",
       status: "open",
       number: 142,
-      url: "https://github.com/hesamsheikh/octogent/pull/142",
+      url: "https://github.com/hesamsheikh/hydra/pull/142",
       title: "feat: worktree git lifecycle menu",
       baseRef: "main",
-      headRef: "octogent/terminal-1",
+      headRef: "hydra/terminal-1",
       isDraft: false,
       mergeable: "MERGEABLE",
       mergeStateStatus: "CLEAN",
@@ -2425,7 +2298,7 @@ describe("createApiServer", () => {
   });
 
   it("creates PR for worktree tentacles and returns PR snapshot", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2445,10 +2318,10 @@ describe("createApiServer", () => {
     });
     expect(createResponse.status).toBe(201);
 
-    const worktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const worktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     gitClient.setWorktreeStatus(worktreePath, {
-      branchName: "octogent/terminal-1",
-      upstreamBranchName: "origin/octogent/terminal-1",
+      branchName: "hydra/terminal-1",
+      upstreamBranchName: "origin/hydra/terminal-1",
       isDirty: false,
       aheadCount: 0,
       behindCount: 0,
@@ -2477,10 +2350,10 @@ describe("createApiServer", () => {
       workspaceMode: "worktree",
       status: "open",
       number: 101,
-      url: "https://github.com/hesamsheikh/octogent/pull/101",
+      url: "https://github.com/hesamsheikh/hydra/pull/101",
       title: "feat: expose worktree lifecycle actions",
       baseRef: "main",
-      headRef: "octogent/terminal-1",
+      headRef: "hydra/terminal-1",
       isDraft: false,
       mergeable: "MERGEABLE",
       mergeStateStatus: "CLEAN",
@@ -2488,7 +2361,7 @@ describe("createApiServer", () => {
   });
 
   it("returns 409 when creating a PR and an open PR already exists for the branch", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2508,10 +2381,10 @@ describe("createApiServer", () => {
     });
     expect(createResponse.status).toBe(201);
 
-    const worktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const worktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     gitClient.setWorktreeStatus(worktreePath, {
-      branchName: "octogent/terminal-1",
-      upstreamBranchName: "origin/octogent/terminal-1",
+      branchName: "hydra/terminal-1",
+      upstreamBranchName: "origin/hydra/terminal-1",
       isDirty: false,
       aheadCount: 0,
       behindCount: 0,
@@ -2523,10 +2396,10 @@ describe("createApiServer", () => {
     });
     gitClient.setWorktreePullRequest(worktreePath, {
       number: 142,
-      url: "https://github.com/hesamsheikh/octogent/pull/142",
+      url: "https://github.com/hesamsheikh/hydra/pull/142",
       title: "feat: existing worktree lifecycle PR",
       baseRef: "main",
-      headRef: "octogent/terminal-1",
+      headRef: "hydra/terminal-1",
       state: "OPEN",
       isDraft: false,
       mergeable: "MERGEABLE",
@@ -2554,7 +2427,7 @@ describe("createApiServer", () => {
   });
 
   it("merges the current branch PR for worktree tentacles", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2574,13 +2447,13 @@ describe("createApiServer", () => {
     });
     expect(createResponse.status).toBe(201);
 
-    const worktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const worktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     gitClient.setWorktreePullRequest(worktreePath, {
       number: 190,
-      url: "https://github.com/hesamsheikh/octogent/pull/190",
+      url: "https://github.com/hesamsheikh/hydra/pull/190",
       title: "feat: ship worktree lifecycle",
       baseRef: "main",
-      headRef: "octogent/terminal-1",
+      headRef: "hydra/terminal-1",
       state: "OPEN",
       isDraft: false,
       mergeable: "MERGEABLE",
@@ -2600,10 +2473,10 @@ describe("createApiServer", () => {
       workspaceMode: "worktree",
       status: "merged",
       number: 190,
-      url: "https://github.com/hesamsheikh/octogent/pull/190",
+      url: "https://github.com/hesamsheikh/hydra/pull/190",
       title: "feat: ship worktree lifecycle",
       baseRef: "main",
-      headRef: "octogent/terminal-1",
+      headRef: "hydra/terminal-1",
       isDraft: false,
       mergeable: "UNKNOWN",
       mergeStateStatus: "MERGED",
@@ -2634,7 +2507,7 @@ describe("createApiServer", () => {
   });
 
   it("removes isolated worktree metadata when deleting a worktree tentacle", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2654,11 +2527,11 @@ describe("createApiServer", () => {
     });
     expect(createResponse.status).toBe(201);
 
-    const expectedWorktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const expectedWorktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     expect(gitClient.getWorktree(expectedWorktreePath)).toEqual(
       expect.objectContaining({
         cwd: workspaceCwd,
-        branchName: "octogent/terminal-1",
+        branchName: "hydra/terminal-1",
       }),
     );
 
@@ -2670,11 +2543,11 @@ describe("createApiServer", () => {
     });
     expect(deleteResponse.status).toBe(204);
     expect(gitClient.getWorktree(expectedWorktreePath)).toBeNull();
-    expect(gitClient.hasBranch("octogent/terminal-1")).toBe(false);
+    expect(gitClient.hasBranch("hydra/terminal-1")).toBe(false);
   });
 
   it("returns 409 and keeps tentacle state when worktree deletion fails", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     const baseUrl = await startServer({
@@ -2694,7 +2567,7 @@ describe("createApiServer", () => {
     });
     expect(createResponse.status).toBe(201);
 
-    const expectedWorktreePath = join(workspaceCwd, ".octogent", "worktrees", "terminal-1");
+    const expectedWorktreePath = join(workspaceCwd, ".hydra", "worktrees", "terminal-1");
     gitClient.setFailRemoveWorktree(true);
 
     const deleteResponse = await fetch(`${baseUrl}/api/terminals/terminal-1`, {
@@ -2710,7 +2583,7 @@ describe("createApiServer", () => {
     expect(gitClient.getWorktree(expectedWorktreePath)).toEqual(
       expect.objectContaining({
         cwd: workspaceCwd,
-        branchName: "octogent/terminal-1",
+        branchName: "hydra/terminal-1",
       }),
     );
 
@@ -2752,9 +2625,9 @@ describe("createApiServer", () => {
   });
 
   it("refreshes builtin prompts from promptsDir on server start", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
-    const projectStateDir = mkdtempSync(join(tmpdir(), "octogent-state-test-"));
-    const promptsDir = mkdtempSync(join(tmpdir(), "octogent-prompts-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
+    const projectStateDir = mkdtempSync(join(tmpdir(), "hydra-state-test-"));
+    const promptsDir = mkdtempSync(join(tmpdir(), "hydra-prompts-test-"));
     temporaryDirectories.push(workspaceCwd, projectStateDir, promptsDir);
 
     mkdirSync(join(projectStateDir, "prompts", "core"), { recursive: true });
@@ -2791,9 +2664,9 @@ describe("createApiServer", () => {
   });
 
   it("reads builtin prompts from the live promptsDir after server start", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
-    const projectStateDir = mkdtempSync(join(tmpdir(), "octogent-state-test-"));
-    const promptsDir = mkdtempSync(join(tmpdir(), "octogent-prompts-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
+    const projectStateDir = mkdtempSync(join(tmpdir(), "hydra-state-test-"));
+    const promptsDir = mkdtempSync(join(tmpdir(), "hydra-prompts-test-"));
     temporaryDirectories.push(workspaceCwd, projectStateDir, promptsDir);
 
     writeFileSync(join(promptsDir, "tentacle-update-tentacle.md"), "version one\n", "utf8");
@@ -2822,7 +2695,7 @@ describe("createApiServer", () => {
   });
 
   it("returns 400 when creating worktree tentacle outside a git repository", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
     const gitClient = new FakeGitClient();
     gitClient.setRepositoryAvailable(false);
@@ -2891,18 +2764,18 @@ describe("createApiServer", () => {
   });
 
   it("spawns a shared-workspace todo agent for an individual item", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
-    mkdirSync(join(workspaceCwd, ".octogent", "tentacles", "docs-knowledge"), {
+    mkdirSync(join(workspaceCwd, ".hydra", "tentacles", "docs-knowledge"), {
       recursive: true,
     });
     writeFileSync(
-      join(workspaceCwd, ".octogent", "tentacles", "docs-knowledge", "CONTEXT.md"),
+      join(workspaceCwd, ".hydra", "tentacles", "docs-knowledge", "CONTEXT.md"),
       "# Docs & Knowledge\n",
       "utf8",
     );
     writeFileSync(
-      join(workspaceCwd, ".octogent", "tentacles", "docs-knowledge", "todo.md"),
+      join(workspaceCwd, ".hydra", "tentacles", "docs-knowledge", "todo.md"),
       "# Todo\n\n- [ ] Audit docs\n- [ ] Consolidate principles\n",
       "utf8",
     );
@@ -2945,18 +2818,18 @@ describe("createApiServer", () => {
   });
 
   it("auto-renames todo agents from the todo item context on first prompt submit", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
-    mkdirSync(join(workspaceCwd, ".octogent", "tentacles", "docs-knowledge"), {
+    mkdirSync(join(workspaceCwd, ".hydra", "tentacles", "docs-knowledge"), {
       recursive: true,
     });
     writeFileSync(
-      join(workspaceCwd, ".octogent", "tentacles", "docs-knowledge", "CONTEXT.md"),
+      join(workspaceCwd, ".hydra", "tentacles", "docs-knowledge", "CONTEXT.md"),
       "# Docs & Knowledge\n",
       "utf8",
     );
     writeFileSync(
-      join(workspaceCwd, ".octogent", "tentacles", "docs-knowledge", "todo.md"),
+      join(workspaceCwd, ".hydra", "tentacles", "docs-knowledge", "todo.md"),
       "# Todo\n\n- [ ] Audit docs\n- [ ] Consolidate principles\n",
       "utf8",
     );
@@ -2974,7 +2847,7 @@ describe("createApiServer", () => {
     expect(solveResponse.status).toBe(201);
 
     const hookResponse = await fetch(
-      `${baseUrl}/api/hooks/user-prompt-submit?octogent_session=docs-knowledge-todo-0`,
+      `${baseUrl}/api/hooks/user-prompt-submit?hydra_session=docs-knowledge-todo-0`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -3002,13 +2875,13 @@ describe("createApiServer", () => {
   });
 
   it("limits swarm prompts to the top-priority items that fit under the child cap", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
-    mkdirSync(join(workspaceCwd, ".octogent", "tentacles", "docs-knowledge"), {
+    mkdirSync(join(workspaceCwd, ".hydra", "tentacles", "docs-knowledge"), {
       recursive: true,
     });
     writeFileSync(
-      join(workspaceCwd, ".octogent", "tentacles", "docs-knowledge", "CONTEXT.md"),
+      join(workspaceCwd, ".hydra", "tentacles", "docs-knowledge", "CONTEXT.md"),
       "# Docs & Knowledge\n",
       "utf8",
     );
@@ -3017,7 +2890,7 @@ describe("createApiServer", () => {
       (_, index) => `- [ ] item ${index}`,
     ).join("\n");
     writeFileSync(
-      join(workspaceCwd, ".octogent", "tentacles", "docs-knowledge", "todo.md"),
+      join(workspaceCwd, ".hydra", "tentacles", "docs-knowledge", "todo.md"),
       `# Todo\n\n${todoItems}\n`,
       "utf8",
     );
@@ -3160,7 +3033,7 @@ describe("createApiServer", () => {
   });
 
   it("restores tentacles across API restarts using persisted registry", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
 
     const firstBaseUrl = await startServer({
@@ -3206,10 +3079,10 @@ describe("createApiServer", () => {
   });
 
   it("marks persisted running terminals as stale when the API starts without their session", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
-    const registryPath = join(workspaceCwd, ".octogent", "state", "tentacles.json");
-    mkdirSync(join(workspaceCwd, ".octogent", "state"), { recursive: true });
+    const registryPath = join(workspaceCwd, ".hydra", "state", "tentacles.json");
+    mkdirSync(join(workspaceCwd, ".hydra", "state"), { recursive: true });
     writeFileSync(
       registryPath,
       `${JSON.stringify(
@@ -3254,10 +3127,10 @@ describe("createApiServer", () => {
   });
 
   it("stops and prunes stale terminal records through lifecycle endpoints", async () => {
-    const workspaceCwd = mkdtempSync(join(tmpdir(), "octogent-api-test-"));
+    const workspaceCwd = mkdtempSync(join(tmpdir(), "hydra-api-test-"));
     temporaryDirectories.push(workspaceCwd);
-    const registryPath = join(workspaceCwd, ".octogent", "state", "tentacles.json");
-    mkdirSync(join(workspaceCwd, ".octogent", "state"), { recursive: true });
+    const registryPath = join(workspaceCwd, ".hydra", "state", "tentacles.json");
+    mkdirSync(join(workspaceCwd, ".hydra", "state"), { recursive: true });
     writeFileSync(
       registryPath,
       `${JSON.stringify(

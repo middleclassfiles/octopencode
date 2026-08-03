@@ -1,4 +1,4 @@
-import { asNumber, asRecord, asString } from "@octogent/core";
+import { asNumber, asRecord, asString } from "@hydra/core";
 
 import type {
   MonitorConfigSnapshot,

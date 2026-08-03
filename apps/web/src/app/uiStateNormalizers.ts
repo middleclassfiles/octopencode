@@ -1,4 +1,4 @@
-import { asRecord } from "@octogent/core";
+import { asRecord } from "@hydra/core";
 
 import { MAX_SIDEBAR_WIDTH, MIN_SIDEBAR_WIDTH, PRIMARY_NAV_MAX } from "./constants";
 import { isTerminalCompletionSoundId } from "./notificationSounds";
@@ -49,20 +49,25 @@ export const normalizeFrontendUiStateSnapshot = (
     nextState.isBottomTelemetryVisible = record.isBottomTelemetryVisible;
   }
 
-  if (typeof record.isCodexUsageVisible === "boolean") {
-    nextState.isCodexUsageVisible = record.isCodexUsageVisible;
+  // Legacy aliases (isClaudeUsage* / isCodexUsage*) normalize onto the single
+  // opencode usage flag so persisted state from older builds keeps working.
+  const legacyUsageVisible = record.isClaudeUsageVisible ?? record.isCodexUsageVisible;
+  if (typeof legacyUsageVisible === "boolean") {
+    nextState.isOpencodeUsageVisible = legacyUsageVisible;
   }
 
-  if (typeof record.isClaudeUsageVisible === "boolean") {
-    nextState.isClaudeUsageVisible = record.isClaudeUsageVisible;
+  if (typeof record.isOpencodeUsageVisible === "boolean") {
+    nextState.isOpencodeUsageVisible = record.isOpencodeUsageVisible;
   }
 
-  if (typeof record.isCodexUsageSectionExpanded === "boolean") {
-    nextState.isCodexUsageSectionExpanded = record.isCodexUsageSectionExpanded;
+  const legacySectionExpanded =
+    record.isClaudeUsageSectionExpanded ?? record.isCodexUsageSectionExpanded;
+  if (typeof legacySectionExpanded === "boolean") {
+    nextState.isOpencodeUsageSectionExpanded = legacySectionExpanded;
   }
 
-  if (typeof record.isClaudeUsageSectionExpanded === "boolean") {
-    nextState.isClaudeUsageSectionExpanded = record.isClaudeUsageSectionExpanded;
+  if (typeof record.isOpencodeUsageSectionExpanded === "boolean") {
+    nextState.isOpencodeUsageSectionExpanded = record.isOpencodeUsageSectionExpanded;
   }
 
   const completionSoundValue = record.terminalCompletionSound;

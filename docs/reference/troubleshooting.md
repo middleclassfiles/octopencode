@@ -20,7 +20,7 @@ Use Node.js `22+`.
 
 Check that your shell environment is available and executable.
 
-If startup fails with `Terminal session limit reached`, Octogent already has the configured number of live PTY-backed sessions. Stop unused terminals with `octogent terminal stop <terminal-id>` or prune inactive records with `octogent terminal prune`. The default cap is 32; set `OCTOGENT_MAX_TERMINAL_SESSIONS` to a positive integer before starting Octogent to adjust it.
+If startup fails with `Terminal session limit reached`, Hydra already has the configured number of live PTY-backed sessions. Stop unused terminals with `hydra terminal stop <terminal-id>` or prune inactive records with `hydra terminal prune`. The default cap is 32; set `HYDRA_MAX_TERMINAL_SESSIONS` to a positive integer before starting Hydra to adjust it.
 
 ## Worktree terminal creation fails
 
@@ -28,7 +28,7 @@ Verify:
 
 - `git --version` works
 - the workspace is a git repository
-- the current user can create worktrees in `.octogent/worktrees/`
+- the current user can create worktrees in `.hydra/worktrees/`
 
 ## GitHub summary is unavailable
 
@@ -50,4 +50,4 @@ That is expected. Channel messages are in-memory only and do not persist across 
 
 That is also expected. PTY sessions can survive a reconnect window, but they do not survive an API restart.
 
-After restart, terminals that were persisted as running are marked `stale` when Octogent cannot reattach them to an in-memory PTY session. Use `octogent terminal list` to inspect lifecycle state, `octogent terminal stop <terminal-id>` or `octogent terminal kill <terminal-id>` for a recorded process, and `octogent terminal prune` to remove stale, stopped, or exited records from the UI.
+After restart, terminals that were persisted as running are marked `stale` when Hydra cannot reattach them to an in-memory PTY session. Use `hydra terminal list` to inspect lifecycle state, `hydra terminal stop <terminal-id>` or `hydra terminal kill <terminal-id>` for a recorded process, and `hydra terminal prune` to remove stale, stopped, or exited records from the UI.

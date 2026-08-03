@@ -573,10 +573,10 @@ export const UsageBarChart = ({ data, isLoading, onRefresh }: UsageChartSectionP
   }, [days, totalTokens, totalSessions, models, projects]);
 
   return (
-    <section className="usage-heatmap" aria-label="Claude token usage chart">
+    <section className="usage-heatmap" aria-label="Opencode token usage chart">
       <header className="usage-heatmap-header">
         <div className="usage-heatmap-header-left">
-          <h3>Claude Token Usage</h3>
+          <h3>Opencode Token Usage</h3>
           <span className="usage-heatmap-summary">
             {formatTokenCount(totalTokens)} tokens across {activeDays} days, {totalSessions}{" "}
             sessions

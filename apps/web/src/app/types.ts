@@ -1,10 +1,9 @@
-import type { GitHubCommitPoint, buildTerminalList } from "@octogent/core";
+import type { GitHubCommitPoint, buildTerminalList } from "@hydra/core";
 
 export type TerminalView = Awaited<ReturnType<typeof buildTerminalList>>;
 
 export type {
-  CodexUsageSnapshot,
-  ClaudeUsageSnapshot,
+  OpencodeUsageSnapshot,
   GitHubCommitPoint,
   GitHubRecentCommit,
   GitHubRepoSummarySnapshot,
@@ -20,10 +19,10 @@ export type {
   ConversationSessionSummary,
   ConversationSessionDetail,
   ConversationSearchHit,
-} from "@octogent/core";
+} from "@hydra/core";
 
-export type { PersistedUiState as FrontendUiStateSnapshot } from "@octogent/core";
-export type { TentacleWorkspaceMode as TerminalWorkspaceMode } from "@octogent/core";
+export type { PersistedUiState as FrontendUiStateSnapshot } from "@hydra/core";
+export type { TentacleWorkspaceMode as TerminalWorkspaceMode } from "@hydra/core";
 
 export type GitHubCommitSparkPoint = GitHubCommitPoint & {
   x: number;

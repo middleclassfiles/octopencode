@@ -1,7 +1,7 @@
 type LocationLike = Pick<Location, "host" | "protocol">;
 
 const readRuntimeBaseUrl = (): string | null => {
-  const value = import.meta.env.VITE_OCTOGENT_API_ORIGIN;
+  const value = import.meta.env.VITE_HYDRA_API_ORIGIN;
   if (typeof value !== "string") {
     return null;
   }
@@ -76,20 +76,12 @@ export const buildTerminalsUrl = (runtimeBaseUrl = readRuntimeBaseUrl()) => {
   return buildAbsoluteUrl(runtimeBaseUrl, "/api/terminals");
 };
 
-export const buildCodexUsageUrl = (runtimeBaseUrl = readRuntimeBaseUrl()) => {
+export const buildOpencodeUsageUrl = (runtimeBaseUrl = readRuntimeBaseUrl()) => {
   if (!runtimeBaseUrl) {
-    return "/api/codex/usage";
+    return "/api/opencode/usage";
   }
 
-  return buildAbsoluteUrl(runtimeBaseUrl, "/api/codex/usage");
-};
-
-export const buildClaudeUsageUrl = (runtimeBaseUrl = readRuntimeBaseUrl()) => {
-  if (!runtimeBaseUrl) {
-    return "/api/claude/usage";
-  }
-
-  return buildAbsoluteUrl(runtimeBaseUrl, "/api/claude/usage");
+  return buildAbsoluteUrl(runtimeBaseUrl, "/api/opencode/usage");
 };
 
 export const buildGithubSummaryUrl = (runtimeBaseUrl = readRuntimeBaseUrl()) => {

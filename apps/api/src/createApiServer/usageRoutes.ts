@@ -1,11 +1,11 @@
 import type { ApiRouteHandler } from "./routeHelpers";
 import { writeJson, writeMethodNotAllowed } from "./routeHelpers";
 
-export const handleCodexUsageRoute: ApiRouteHandler = async (
+export const handleOpencodeUsageRoute: ApiRouteHandler = async (
   { request, response, requestUrl, corsOrigin },
-  { readCodexUsageSnapshot },
+  { readOpencodeUsageSnapshot },
 ) => {
-  if (requestUrl.pathname !== "/api/codex/usage") {
+  if (requestUrl.pathname !== "/api/opencode/usage") {
     return false;
   }
 
@@ -14,34 +14,7 @@ export const handleCodexUsageRoute: ApiRouteHandler = async (
     return true;
   }
 
-  const payload = await readCodexUsageSnapshot();
-  writeJson(response, 200, payload, corsOrigin);
-  return true;
-};
-
-export const handleClaudeUsageRoute: ApiRouteHandler = async (
-  { request, response, requestUrl, corsOrigin },
-  { readClaudeUsageSnapshot, readClaudeOauthUsageSnapshot, readClaudeCliUsageSnapshot },
-) => {
-  if (
-    requestUrl.pathname !== "/api/claude/usage" &&
-    requestUrl.pathname !== "/api/claude/usage/oauth" &&
-    requestUrl.pathname !== "/api/claude/usage/cli"
-  ) {
-    return false;
-  }
-
-  if (request.method !== "GET") {
-    writeMethodNotAllowed(response, corsOrigin);
-    return true;
-  }
-
-  const payload =
-    requestUrl.pathname === "/api/claude/usage/oauth"
-      ? await readClaudeOauthUsageSnapshot()
-      : requestUrl.pathname === "/api/claude/usage/cli"
-        ? await readClaudeCliUsageSnapshot()
-        : await readClaudeUsageSnapshot();
+  const payload = await readOpencodeUsageSnapshot();
   writeJson(response, 200, payload, corsOrigin);
   return true;
 };

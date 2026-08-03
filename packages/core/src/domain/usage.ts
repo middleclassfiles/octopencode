@@ -1,31 +1,15 @@
-export type ClaudeUsageSnapshot = {
+export type OpencodeUsageSnapshot = {
   status: "ok" | "unavailable" | "error";
   fetchedAt: string;
-  source: "cli-pty" | "oauth-api" | "none";
+  source: "local-db" | "none";
   message?: string | null;
-  planType?: string | null;
-  primaryUsedPercent?: number | null;
-  primaryResetAt?: string | null;
-  secondaryUsedPercent?: number | null;
-  secondaryResetAt?: string | null;
-  sonnetUsedPercent?: number | null;
-  sonnetResetAt?: string | null;
-  extraUsageCostUsed?: number | null;
-  extraUsageCostLimit?: number | null;
-};
-
-export type CodexUsageSnapshot = {
-  status: "ok" | "unavailable" | "error";
-  fetchedAt: string;
-  source: "oauth-api" | "none";
-  message?: string | null;
-  planType?: string | null;
-  primaryUsedPercent?: number | null;
-  primaryResetAt?: string | null;
-  secondaryUsedPercent?: number | null;
-  secondaryResetAt?: string | null;
-  creditsBalance?: number | null;
-  creditsUnlimited?: boolean | null;
+  sessionCount?: number | null;
+  costToday?: number | null;
+  cost7d?: number | null;
+  cost30d?: number | null;
+  tokensToday?: number | null;
+  tokens7d?: number | null;
+  tokens30d?: number | null;
 };
 
 export type GitHubCommitPoint = {

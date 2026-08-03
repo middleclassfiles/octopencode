@@ -1,11 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import type {
-  GitHubCommitPoint,
-  GitHubRecentCommit,
-  GitHubRepoSummarySnapshot,
-} from "@octogent/core";
+import type { GitHubCommitPoint, GitHubRecentCommit, GitHubRepoSummarySnapshot } from "@hydra/core";
 
 const execFileAsync = promisify(execFile);
 const COMMIT_SERIES_DAYS = 30;

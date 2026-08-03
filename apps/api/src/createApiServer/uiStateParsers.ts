@@ -87,44 +87,50 @@ export const parseUiStatePatch = (
     patch.isBottomTelemetryVisible = record.isBottomTelemetryVisible;
   }
 
-  if (record.isCodexUsageVisible !== undefined) {
-    if (typeof record.isCodexUsageVisible !== "boolean") {
-      return {
-        patch: null,
-        error: "isCodexUsageVisible must be a boolean.",
-      };
-    }
-    patch.isCodexUsageVisible = record.isCodexUsageVisible;
-  }
-
-  if (record.isClaudeUsageVisible !== undefined) {
-    if (typeof record.isClaudeUsageVisible !== "boolean") {
+  // Legacy opencode-agnostic aliases (isClaudeUsageVisible / isCodexUsageVisible)
+  // are normalized onto the single opencode flag.
+  const legacyUsageVisible = record.isClaudeUsageVisible ?? record.isCodexUsageVisible;
+  if (legacyUsageVisible !== undefined) {
+    if (typeof legacyUsageVisible !== "boolean") {
       return {
         patch: null,
         error: "isClaudeUsageVisible must be a boolean.",
       };
     }
-    patch.isClaudeUsageVisible = record.isClaudeUsageVisible;
+    patch.isOpencodeUsageVisible = legacyUsageVisible;
   }
 
-  if (record.isClaudeUsageSectionExpanded !== undefined) {
-    if (typeof record.isClaudeUsageSectionExpanded !== "boolean") {
+  if (record.isOpencodeUsageVisible !== undefined) {
+    if (typeof record.isOpencodeUsageVisible !== "boolean") {
+      return {
+        patch: null,
+        error: "isOpencodeUsageVisible must be a boolean.",
+      };
+    }
+    patch.isOpencodeUsageVisible = record.isOpencodeUsageVisible;
+  }
+
+  // Legacy aliases for the usage section expand state.
+  const legacySectionExpanded =
+    record.isClaudeUsageSectionExpanded ?? record.isCodexUsageSectionExpanded;
+  if (legacySectionExpanded !== undefined) {
+    if (typeof legacySectionExpanded !== "boolean") {
       return {
         patch: null,
         error: "isClaudeUsageSectionExpanded must be a boolean.",
       };
     }
-    patch.isClaudeUsageSectionExpanded = record.isClaudeUsageSectionExpanded;
+    patch.isOpencodeUsageSectionExpanded = legacySectionExpanded;
   }
 
-  if (record.isCodexUsageSectionExpanded !== undefined) {
-    if (typeof record.isCodexUsageSectionExpanded !== "boolean") {
+  if (record.isOpencodeUsageSectionExpanded !== undefined) {
+    if (typeof record.isOpencodeUsageSectionExpanded !== "boolean") {
       return {
         patch: null,
-        error: "isCodexUsageSectionExpanded must be a boolean.",
+        error: "isOpencodeUsageSectionExpanded must be a boolean.",
       };
     }
-    patch.isCodexUsageSectionExpanded = record.isCodexUsageSectionExpanded;
+    patch.isOpencodeUsageSectionExpanded = record.isOpencodeUsageSectionExpanded;
   }
 
   const completionSoundKey = record.terminalCompletionSound;

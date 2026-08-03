@@ -1,4 +1,4 @@
-import type { AgentRuntimeState } from "@octogent/core";
+import type { AgentRuntimeState } from "@hydra/core";
 
 export type { AgentRuntimeState };
 

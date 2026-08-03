@@ -5,7 +5,7 @@ import type {
   DeckTentacleSummary,
   WorkspaceSetupSnapshot,
   WorkspaceSetupStepId,
-} from "@octogent/core";
+} from "@hydra/core";
 import { useClickOutside } from "../app/hooks/useClickOutside";
 import type { TerminalAgentProvider } from "../app/types";
 import {
@@ -80,14 +80,14 @@ export const DeckPrimaryView = ({
   const [availableSkills, setAvailableSkills] = useState<DeckAvailableSkill[]>([]);
   const [savingTentacleSkillsId, setSavingTentacleSkillsId] = useState<string | null>(null);
 
-  const [selectedAgent, setSelectedAgent] = useState<TerminalAgentProvider>("claude-code");
+  const [selectedAgent, setSelectedAgent] = useState<TerminalAgentProvider>("opencode");
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
   const agentMenuRef = useRef<HTMLDivElement>(null);
   const [isLaunchingAgent, setIsLaunchingAgent] = useState(false);
   const [runningSetupStepId, setRunningSetupStepId] = useState<
     | "initialize-workspace"
     | "ensure-gitignore"
-    | "check-claude"
+    | "check-opencode"
     | "check-git"
     | "check-curl"
     | "create-tentacles"
@@ -230,7 +230,7 @@ export const DeckPrimaryView = ({
       stepId:
         | "initialize-workspace"
         | "ensure-gitignore"
-        | "check-claude"
+        | "check-opencode"
         | "check-git"
         | "check-curl"
         | "create-tentacles",
@@ -362,7 +362,7 @@ export const DeckPrimaryView = ({
                 isLoading={isWorkspaceSetupLoading}
                 error={workspaceSetupError}
                 onRunStep={handleRunSetupStep}
-                onLaunchClaudeCode={handleLaunchAgent}
+                onLaunchOpencode={handleLaunchAgent}
                 isLaunchingAgent={isLaunchingAgent}
                 isRunningStepId={runningSetupStepId}
               />
@@ -446,7 +446,7 @@ export const DeckPrimaryView = ({
                 isLoading={isWorkspaceSetupLoading}
                 error={workspaceSetupError}
                 onRunStep={handleRunSetupStep}
-                onLaunchClaudeCode={handleLaunchAgent}
+                onLaunchOpencode={handleLaunchAgent}
                 isLaunchingAgent={isLaunchingAgent}
                 isRunningStepId={runningSetupStepId}
               />
@@ -538,7 +538,7 @@ export const DeckPrimaryView = ({
             <div className="deck-detail-main-content deck-vault-browser">
               <pre className="deck-vault-tree">
                 <span className="deck-vault-tree-dir">
-                  .octogent/tentacles/{focusedTentacle.tentacleId}/
+                  .hydra/tentacles/{focusedTentacle.tentacleId}/
                 </span>
                 {(() => {
                   const files = [...focusedTentacle.vaultFiles, "CONTEXT.md"];

@@ -1,70 +1,60 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  collectStartupPrerequisiteReport,
-  formatStartupPrerequisiteReport,
-  isCommandAvailable,
-} from "../src/startupPrerequisites";
+import { collectStartupPrerequisiteReport, isCommandAvailable } from "../src/startupPrerequisites";
 
-describe("startup prerequisites", () => {
-  it("passes cleanly when every prerequisite is installed", () => {
-    const report = collectStartupPrerequisiteReport(() => true);
+describe("collectStartupPrerequisiteReport", () => {
+  it("errors when opencode is missing", () => {
+    const report = collectStartupPrerequisiteReport(() => false);
 
-    expect(report.errors).toEqual([]);
-    expect(report.warnings).toEqual([]);
-    expect(formatStartupPrerequisiteReport(report)).toEqual([]);
+    expect(report.errors.length).toBe(1);
+    expect(report.errors[0]?.command).toBe("opencode");
+    expect(report.errors[0]?.summary).toContain("`opencode` is not installed");
   });
 
-  it("fails startup when no agent CLI is installed", () => {
-    const report = collectStartupPrerequisiteReport((command) => command === "git");
+  it("warns for optional tooling when opencode is present", () => {
+    const report = collectStartupPrerequisiteReport((command) => command === "opencode");
 
-    expect(report.errors).toHaveLength(1);
-    expect(report.errors[0]?.summary).toContain("Neither `claude` nor `codex`");
-    expect(report.warnings.map((issue) => issue.command)).toEqual(["gh", "curl"]);
+    expect(report.errors.length).toBe(0);
+    expect(report.warnings.map((issue) => issue.command)).toEqual(["git", "gh", "curl"]);
   });
 
-  it("warns for degraded optional integrations when one provider is available", () => {
-    const report = collectStartupPrerequisiteReport((command) => command === "codex");
+  it("formats warnings with opencode event delivery guidance", () => {
+    const report = collectStartupPrerequisiteReport((command) => command === "opencode");
+    const lines = report.warnings
+      .filter((issue) => issue.command === "curl")
+      .flatMap((issue) => [issue.summary, issue.guidance]);
 
-    expect(report.errors).toEqual([]);
-    expect(report.warnings.map((issue) => issue.command)).toEqual(["claude", "git", "gh", "curl"]);
-    expect(formatStartupPrerequisiteReport(report)).toEqual([
-      "Octogent startup preflight:",
-      "  Warning: `claude` is not installed.",
-      "    Claude-backed terminals are unavailable. Install Claude Code and run `claude login` if you want the default Claude provider.",
-      "  Warning: `git` is not installed.",
-      "    Worktree terminals and git lifecycle actions are unavailable. Install Git to enable branch/worktree flows.",
-      "  Warning: `gh` is not installed.",
-      "    GitHub pull request features are unavailable. Install GitHub CLI and run `gh auth login` to enable PR actions.",
-      "  Warning: `curl` is not installed.",
-      "    Claude hook command callbacks for SessionStart, UserPromptSubmit, and Stop are unavailable. Install curl to restore full Claude hook delivery.",
-    ]);
+    expect(lines.join("\n")).toContain("Opencode plugin event callbacks");
   });
 
-  it("uses where on Windows and which elsewhere when checking commands", () => {
-    const calls: Array<{ file: string; args: string[] }> = [];
-
-    const windowsAvailable = isCommandAvailable("claude", {
+  it("resolves commands on the current platform", () => {
+    const windowsAvailable = isCommandAvailable("opencode", {
       platform: "win32",
-      execFileSyncImpl: ((file, args) => {
-        calls.push({ file, args: args as string[] });
-        return Buffer.from("");
-      }) as typeof import("node:child_process").execFileSync,
+      execFileSyncImpl: (() => {
+        throw new Error("not found");
+      }) as never,
     });
+    expect(windowsAvailable).toBe(false);
 
-    const unixAvailable = isCommandAvailable("codex", {
+    const unixAvailable = isCommandAvailable("opencode", {
       platform: "linux",
-      execFileSyncImpl: ((file, args) => {
-        calls.push({ file, args: args as string[] });
-        return Buffer.from("");
-      }) as typeof import("node:child_process").execFileSync,
+      execFileSyncImpl: (() => {
+        throw new Error("not found");
+      }) as never,
     });
+    expect(unixAvailable).toBe(false);
+  });
 
-    expect(windowsAvailable).toBe(true);
-    expect(unixAvailable).toBe(true);
-    expect(calls).toEqual([
-      { file: "where", args: ["claude"] },
-      { file: "which", args: ["codex"] },
-    ]);
+  it("checks the right lookup binary per platform", () => {
+    const calls: string[][] = [];
+    const execFileSyncImpl = ((file: string, args: string[]) => {
+      calls.push([file, ...args]);
+    }) as never;
+
+    isCommandAvailable("opencode", { platform: "win32", execFileSyncImpl });
+    isCommandAvailable("opencode", { platform: "darwin", execFileSyncImpl });
+
+    expect(calls[0]).toEqual(["where", "opencode"]);
+    expect(calls[1]).toEqual(["which", "opencode"]);
   });
 });

@@ -2,15 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { GITHUB_SPARKLINE_HEIGHT, GITHUB_SPARKLINE_WIDTH } from "../app/constants";
 import type { UsageChartData } from "../app/hooks/useUsageHeatmapPolling";
-import type { ClaudeUsageSnapshot } from "../app/types";
+import type { OpencodeUsageSnapshot } from "../app/types";
 import { OctopusGlyph } from "./EmptyOctopus";
 
 type RuntimeStatusStripProps = {
   sparklinePoints: string;
   usageData: UsageChartData | null;
-  claudeUsage: ClaudeUsageSnapshot | null;
-  isRefreshingClaudeUsage?: boolean;
-  onRefreshClaudeUsage?: () => void;
+  opencodeUsage: OpencodeUsageSnapshot | null;
+  isRefreshingOpencodeUsage?: boolean;
+  onRefreshOpencodeUsage?: () => void;
 };
 
 const MINI_USAGE_WIDTH = 160;
@@ -40,56 +40,70 @@ const buildUsageBars = (data: UsageChartData): MiniBar[] => {
   });
 };
 
-const pct = (value: number | null | undefined, loading?: boolean): string => {
-  if (loading) return "···";
-  return value == null ? "NA" : `${Math.round(value)}%`;
+const formatCost = (value: number | null | undefined): string => {
+  if (value == null) return "NA";
+  if (value === 0) return "$0";
+  if (value < 0.01) return `$${value.toFixed(4)}`;
+  return `$${value.toFixed(2)}`;
 };
 
+const sharePercent = (part: number | null | undefined, total: number | null | undefined): number =>
+  part == null || total == null || total <= 0 ? 0 : Math.min(100, (part / total) * 100);
+
 const usageState = (
-  claudeUsage: ClaudeUsageSnapshot | null,
+  usage: OpencodeUsageSnapshot | null,
 ): {
   label: string;
   loading: boolean;
-  sessionPercent: number | null | undefined;
-  weekPercent: number | null | undefined;
+  sessionLabel: string;
+  sessionPercent: number;
+  weekLabel: string;
+  weekPercent: number;
   message?: string;
 } => {
-  if (claudeUsage === null) {
+  if (usage === null) {
     return {
-      label: "Session",
+      label: "Usage",
       loading: true,
+      sessionLabel: "···",
       sessionPercent: 0,
+      weekLabel: "···",
       weekPercent: 0,
     };
   }
 
-  const label = claudeUsage.source === "oauth-api" ? "5h" : "Session";
-  if (claudeUsage.status === "ok") {
+  if (usage.status === "ok") {
     return {
-      label,
+      label: "Usage",
       loading: false,
-      sessionPercent: claudeUsage.primaryUsedPercent,
-      weekPercent: claudeUsage.secondaryUsedPercent,
+      sessionLabel: `${formatCost(usage.costToday)} · ${usage.sessionCount ?? 0} sessions`,
+      sessionPercent: sharePercent(usage.costToday, usage.cost7d),
+      weekLabel: formatCost(usage.cost7d),
+      weekPercent: sharePercent(usage.cost7d, usage.cost30d),
     };
   }
 
   return {
-    label,
+    label: "Usage",
     loading: false,
-    sessionPercent: null,
-    weekPercent: null,
-    message: claudeUsage.message ?? "Claude usage unavailable",
+    sessionLabel: "NA",
+    sessionPercent: 0,
+    weekLabel: "NA",
+    weekPercent: 0,
+    message: usage.message ?? "Opencode usage unavailable",
   };
 };
 
 const UsageRail = ({
   label,
   percent,
+  valueLabel,
   loading,
   title,
 }: {
   label: string;
-  percent: number | null | undefined;
+  percent: number;
+  valueLabel: string;
   loading?: boolean;
   title?: string;
 }) => {
@@ -117,12 +131,12 @@ const UsageRail = ({
     >
       <span className="console-status-usage-row-meta">
         <span className="console-status-usage-row-label">{label}</span>
-        <span className="console-status-usage-row-value">{pct(percent, loading)}</span>
+        <span className="console-status-usage-row-value">{loading ? "···" : valueLabel}</span>
       </span>
       <span className="console-status-usage-rail">
         <span
           className="console-status-usage-rail-fill"
-          style={{ width: `${Math.min(100, percent ?? 0)}%` }}
+          style={{ width: `${Math.min(100, percent)}%` }}
         />
       </span>
       {title && tooltip ? (
@@ -143,12 +157,12 @@ const UsageRail = ({
 export const RuntimeStatusStrip = ({
   sparklinePoints,
   usageData,
-  claudeUsage,
-  isRefreshingClaudeUsage = false,
-  onRefreshClaudeUsage,
+  opencodeUsage,
+  isRefreshingOpencodeUsage = false,
+  onRefreshOpencodeUsage,
 }: RuntimeStatusStripProps) => {
   const usageBars = useMemo(() => (usageData ? buildUsageBars(usageData) : []), [usageData]);
-  const claudeUsageState = usageState(claudeUsage);
+  const opencodeUsageState = usageState(opencodeUsage);
   const [showRefreshSpin, setShowRefreshSpin] = useState(false);
   const refreshStartedAtRef = useRef<number | null>(null);
   const refreshHideTimerRef = useRef<number | null>(null);
@@ -162,7 +176,7 @@ export const RuntimeStatusStrip = ({
   }, []);
 
   useEffect(() => {
-    if (isRefreshingClaudeUsage) {
+    if (isRefreshingOpencodeUsage) {
       if (refreshHideTimerRef.current !== null) {
         window.clearTimeout(refreshHideTimerRef.current);
         refreshHideTimerRef.current = null;
@@ -184,7 +198,7 @@ export const RuntimeStatusStrip = ({
       refreshStartedAtRef.current = null;
       refreshHideTimerRef.current = null;
     }, remainingMs);
-  }, [isRefreshingClaudeUsage]);
+  }, [isRefreshingOpencodeUsage]);
 
   return (
     <section className="console-status-strip" aria-label="Runtime status strip">
@@ -195,7 +209,7 @@ export const RuntimeStatusStrip = ({
           expression="normal"
           scale={2}
         />
-        <span className="console-status-brand">OCTOGENT</span>
+        <span className="console-status-brand">HYDRA</span>
       </div>
       <div className="console-status-charts">
         <div className="console-status-sparkline" aria-label="Commits per day over last 30 days">
@@ -209,7 +223,7 @@ export const RuntimeStatusStrip = ({
           </div>
           <span className="console-status-sparkline-label">COMMITS/DAY · LAST 30 DAYS</span>
         </div>
-        <div className="console-status-usage-mini" aria-label="Claude token usage last 30 days">
+        <div className="console-status-usage-mini" aria-label="Opencode token usage last 30 days">
           {usageBars.length > 0 ? (
             <>
               <div className="console-status-usage-mini-chart">
@@ -227,44 +241,46 @@ export const RuntimeStatusStrip = ({
                 </svg>
               </div>
               <span className="console-status-sparkline-label">
-                CLAUDE TOKENS/DAY · LAST 30 DAYS
+                OPENCODE TOKENS/DAY · LAST 30 DAYS
               </span>
             </>
           ) : (
-            <span className="console-status-sparkline-label">CLAUDE USAGE —</span>
+            <span className="console-status-sparkline-label">OPENCODE USAGE —</span>
           )}
         </div>
       </div>
-      <div className="console-status-claude-usage" aria-label="Claude usage limits">
-        {onRefreshClaudeUsage && (
+      <div className="console-status-opencode-usage" aria-label="Opencode usage limits">
+        {onRefreshOpencodeUsage && (
           <button
             type="button"
-            className="console-status-claude-usage-refresh"
-            onClick={onRefreshClaudeUsage}
-            aria-label="Refresh Claude usage"
-            title="Refresh Claude usage"
+            className="console-status-opencode-usage-refresh"
+            onClick={onRefreshOpencodeUsage}
+            aria-label="Refresh opencode usage"
+            title="Refresh opencode usage"
             data-refreshing={showRefreshSpin ? "true" : "false"}
           >
             ↻
           </button>
         )}
-        <span className="console-status-claude-usage-title">
-          CLAUDE
+        <span className="console-status-opencode-usage-title">
+          OPENCODE
           <br />
           USAGE
         </span>
-        <div className="console-status-claude-usage-bars">
+        <div className="console-status-opencode-usage-bars">
           <UsageRail
-            label={claudeUsageState.label}
-            percent={claudeUsageState.sessionPercent}
-            loading={claudeUsageState.loading}
-            {...(claudeUsageState.message ? { title: claudeUsageState.message } : {})}
+            label="Today"
+            percent={opencodeUsageState.sessionPercent}
+            valueLabel={opencodeUsageState.sessionLabel}
+            loading={opencodeUsageState.loading}
+            {...(opencodeUsageState.message ? { title: opencodeUsageState.message } : {})}
           />
           <UsageRail
-            label="Week (all)"
-            percent={claudeUsageState.weekPercent}
-            loading={claudeUsageState.loading}
-            {...(claudeUsageState.message ? { title: claudeUsageState.message } : {})}
+            label="7 days"
+            percent={opencodeUsageState.weekPercent}
+            valueLabel={opencodeUsageState.weekLabel}
+            loading={opencodeUsageState.loading}
+            {...(opencodeUsageState.message ? { title: opencodeUsageState.message } : {})}
           />
         </div>
       </div>

@@ -9,10 +9,7 @@ export type StartupPrerequisiteIssue = {
   guidance: string;
 };
 
-export type StartupPrerequisiteAvailability = Record<
-  "claude" | "codex" | "git" | "gh" | "curl",
-  boolean
->;
+export type StartupPrerequisiteAvailability = Record<"opencode" | "git" | "gh" | "curl", boolean>;
 
 export type StartupPrerequisiteReport = {
   availability: StartupPrerequisiteAvailability;
@@ -52,8 +49,7 @@ export const collectStartupPrerequisiteReport = (
   isAvailable: CommandAvailabilityChecker = (command) => isCommandAvailable(command),
 ): StartupPrerequisiteReport => {
   const availability: StartupPrerequisiteAvailability = {
-    claude: isAvailable("claude"),
-    codex: isAvailable("codex"),
+    opencode: isAvailable("opencode"),
     git: isAvailable("git"),
     gh: isAvailable("gh"),
     curl: isAvailable("curl"),
@@ -62,34 +58,14 @@ export const collectStartupPrerequisiteReport = (
   const errors: StartupPrerequisiteIssue[] = [];
   const warnings: StartupPrerequisiteIssue[] = [];
 
-  if (!availability.claude && !availability.codex) {
+  if (!availability.opencode) {
     errors.push({
-      command: "claude/codex",
+      command: "opencode",
       severity: "error",
-      summary: "Neither `claude` nor `codex` is installed.",
+      summary: "`opencode` is not installed.",
       guidance:
-        "Install at least one agent CLI before starting Octogent. Claude-backed terminals use `claude`; Codex-backed terminals use `codex`.",
+        "Install opencode (https://opencode.ai) before starting Hydra. All Hydra terminals are opencode-backed.",
     });
-  } else {
-    if (!availability.claude) {
-      warnings.push({
-        command: "claude",
-        severity: "warning",
-        summary: "`claude` is not installed.",
-        guidance:
-          "Claude-backed terminals are unavailable. Install Claude Code and run `claude login` if you want the default Claude provider.",
-      });
-    }
-
-    if (!availability.codex) {
-      warnings.push({
-        command: "codex",
-        severity: "warning",
-        summary: "`codex` is not installed.",
-        guidance:
-          "Codex-backed terminals and Codex usage telemetry are unavailable. Install Codex CLI and run `codex login` if you want Codex terminals.",
-      });
-    }
   }
 
   if (!availability.git) {
@@ -118,7 +94,7 @@ export const collectStartupPrerequisiteReport = (
       severity: "warning",
       summary: "`curl` is not installed.",
       guidance:
-        "Claude hook command callbacks for SessionStart, UserPromptSubmit, and Stop are unavailable. Install curl to restore full Claude hook delivery.",
+        "Opencode plugin event callbacks for session start, prompt submit, and stop are unavailable. Install curl to restore full event delivery.",
     });
   }
 
@@ -130,7 +106,7 @@ export const formatStartupPrerequisiteReport = (report: StartupPrerequisiteRepor
     return [];
   }
 
-  const lines = ["Octogent startup preflight:"];
+  const lines = ["Hydra startup preflight:"];
 
   for (const issue of report.errors) {
     lines.push(`  Error: ${issue.summary}`);

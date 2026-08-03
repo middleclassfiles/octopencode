@@ -1,12 +1,12 @@
-# Octogent Docs
+# Hydra Docs
 
-These docs are written for contributors and future coding agents. They explain how Octogent is put together, where state lives, and how local terminal agents are coordinated.
+These docs are written for contributors and future coding agents. They explain how Hydra is put together, where state lives, and how local terminal agents are coordinated.
 
-Octogent has three main layers:
+Hydra has three main layers:
 
-- **agent-facing files** in `.octogent/tentacles/<tentacle-id>/`, which hold context, todos, and handoff notes
-- **runtime state** under `~/.octogent/projects/<project-id>/state/`, which tracks terminals, UI state, transcripts, and app metadata
-- **live sessions** in the API process, where WebSocket connections are attached to PTY-backed Claude Code terminals
+- **agent-facing files** in `.hydra/tentacles/<tentacle-id>/`, which hold context, todos, and handoff notes
+- **runtime state** under `~/.hydra/projects/<project-id>/state/`, which tracks terminals, UI state, transcripts, and app metadata
+- **live sessions** in the API process, where WebSocket connections are attached to PTY-backed opencode terminals
 
 ## Start here
 

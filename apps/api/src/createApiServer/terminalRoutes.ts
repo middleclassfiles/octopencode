@@ -34,7 +34,7 @@ const buildTentacleInitialPrompt = (
     return Promise.resolve(undefined);
   }
 
-  const tentacleFolderPath = join(".octogent", "tentacles", tentacleId);
+  const tentacleFolderPath = join(".hydra", "tentacles", tentacleId).replace(/\\/g, "/");
   return resolvePrompt(promptsDir, "tentacle-context-init", {
     tentacleName: tentacle.displayName,
     tentacleId,

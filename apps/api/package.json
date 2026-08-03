@@ -1,5 +1,5 @@
 {
-  "name": "@octogent/api",
+  "name": "@hydra/api",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@octogent/core": "workspace:*",
+    "@hydra/core": "workspace:*",
     "node-pty": "^1.1.0",
     "ws": "^8.19.0"
   },

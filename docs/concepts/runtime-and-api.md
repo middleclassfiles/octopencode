@@ -1,6 +1,6 @@
 # Runtime And API
 
-Octogent runs as a local API with a local web UI on top.
+Hydra runs as a local API with a local web UI on top.
 
 ## Runtime shape
 
@@ -12,7 +12,7 @@ flowchart TD
   WS --> Runtime
   Runtime --> PTY[PTY sessions]
   Runtime --> Files["Project and global state"]
-  Runtime --> Hooks[Claude hook ingestion]
+  Runtime --> Hooks[Opencode plugin event ingestion]
 ```
 
 ## Runtime responsibilities
@@ -22,11 +22,11 @@ The API process owns the moving parts that cannot live in markdown:
 - terminal registry loading, migration, and persistence
 - PTY lifecycle and scrollback
 - WebSocket upgrades for terminal IO and terminal list events
-- Claude hook installation and ingestion
+- opencode plugin installation and event ingestion
 - worktree creation and cleanup for isolated terminals
 - transcript capture and conversation export
 - in-memory channel queues
-- Deck file operations over `.octogent/tentacles/`
+- Deck file operations over `.hydra/tentacles/`
 - UI state persistence
 
 ## Transport model
@@ -42,15 +42,15 @@ Terminal WebSockets do not own the PTY. They are clients attached to a PTY sessi
 
 - binds to `127.0.0.1` by default
 - enforces loopback `Host` and `Origin` checks by default
-- remote access must be enabled explicitly with `OCTOGENT_ALLOW_REMOTE_ACCESS=1`
+- remote access must be enabled explicitly with `HYDRA_ALLOW_REMOTE_ACCESS=1`
 
 ## Persistence model
 
-- project-local scaffold lives under `.octogent/`
-- runtime state lives under `~/.octogent/projects/<project-id>/state/`
+- project-local scaffold lives under `.hydra/`
+- runtime state lives under `~/.hydra/projects/<project-id>/state/`
 - transcript events persist independently from PTY scrollback
 - PTY sessions do not survive API restarts
-- terminal records persisted as `running` are reconciled to `stale` on startup when no live Octogent session owns them
+- terminal records persisted as `running` are reconciled to `stale` on startup when no live Hydra session owns them
 
 The terminal registry is `tentacles.json` for historical reasons. Current records are terminals, not tentacles. A terminal record stores identity, tentacle ID, optional worktree ID, parent terminal ID, workspace mode, display name, lifecycle fields, and UI-related metadata.
 
@@ -60,7 +60,7 @@ Deck metadata is separate from tentacle markdown. `deck.json` stores display/sta
 
 Creating a terminal writes a registry record first. If an initial prompt is provided, the runtime immediately starts a PTY session. Otherwise, the PTY starts when a WebSocket or direct listener attaches.
 
-When a PTY starts, Octogent:
+When a PTY starts, Hydra:
 
 1. resolves the working directory from the terminal workspace mode
 2. spawns the user's shell through `node-pty`
@@ -71,19 +71,20 @@ When a PTY starts, Octogent:
 
 Stopping or killing a terminal tears down the active PTY and updates lifecycle metadata. Deleting a terminal also cascades to child terminals and removes worktrees for worktree-backed records.
 
-## Hook mechanism
+## Plugin mechanism
 
-For Claude-backed terminals, Octogent writes hooks into the target `.claude/settings.json`. The hooks call back into the local API and provide state transitions that terminal output alone cannot reliably express.
+For opencode-backed terminals, Hydra writes a bridge plugin into `<workspace>/.opencode/plugin/hydra-events.js`. opencode auto-loads every `*.js` file in that directory, so the plugin can call back into the local API and provide state transitions that terminal output alone cannot reliably express.
 
-Hooks currently feed these mechanisms:
+The plugin currently feeds these mechanisms:
 
-- `UserPromptSubmit` marks the terminal active and can auto-name generated terminals from the first prompt
-- `PreToolUse` records the current tool and marks user-question waits
-- `Notification` marks permission waits and idle prompts
-- `Stop` parses Claude transcript data into stored conversations and releases the idle keep-alive
-- `PostToolUse` for `Edit|Write` feeds code-intel events
+- `session-start` binds the opencode session ID to the terminal and installs the keep-alive
+- `user-prompt-submit` marks the terminal active and can auto-name generated terminals from the first prompt
+- `pre-tool-use` records the current tool and marks user-question waits
+- `notification` marks permission waits and idle prompts
+- `stop` exports the opencode session transcript (`opencode export --sanitize <sessionId>`) into stored conversations and releases the idle keep-alive
+- `event` for `tool.execute.*` events feeds code-intel
 
-Channel delivery is also tied to hooks. Messages are queued in memory and injected when a target session is idle, including after idle or stop hook events.
+Channel delivery is also tied to plugin events. Messages are queued in memory and injected when a target session is idle, including after idle or stop events.
 
 ## Main API groups
 

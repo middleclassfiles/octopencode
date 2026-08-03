@@ -1,15 +1,14 @@
-import { type TerminalSnapshot, buildTerminalList, isAgentRuntimeState } from "@octogent/core";
+import { type TerminalSnapshot, buildTerminalList, isAgentRuntimeState } from "@hydra/core";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
 import { useBackendLivenessPolling } from "./app/hooks/useBackendLivenessPolling";
 import { OCTOBOSS_ID } from "./app/hooks/useCanvasGraphData";
-import { useClaudeUsagePolling } from "./app/hooks/useClaudeUsagePolling";
-import { useCodexUsagePolling } from "./app/hooks/useCodexUsagePolling";
 import { useConsoleKeyboardShortcuts } from "./app/hooks/useConsoleKeyboardShortcuts";
 import { useGitHubPrimaryViewModel } from "./app/hooks/useGitHubPrimaryViewModel";
 import { useGithubSummaryPolling } from "./app/hooks/useGithubSummaryPolling";
 import { useInitialColumnsHydration } from "./app/hooks/useInitialColumnsHydration";
 import { useMonitorRuntime } from "./app/hooks/useMonitorRuntime";
+import { useOpencodeUsagePolling } from "./app/hooks/useOpencodeUsagePolling";
 import { usePersistedUiState } from "./app/hooks/usePersistedUiState";
 import { useTentacleGitLifecycle } from "./app/hooks/useTentacleGitLifecycle";
 import { useTerminalCompletionNotification } from "./app/hooks/useTerminalCompletionNotification";
@@ -70,9 +69,8 @@ export const App = () => {
     isActiveAgentsSectionExpanded,
     isAgentsSidebarVisible,
     isBottomTelemetryVisible,
-    isClaudeUsageSectionExpanded,
-    isCodexUsageSectionExpanded,
     isMonitorVisible,
+    isOpencodeUsageSectionExpanded,
     isRuntimeStatusStripVisible,
     isUiStateHydrated,
     minimizedTerminalIds,
@@ -80,9 +78,8 @@ export const App = () => {
     setIsActiveAgentsSectionExpanded,
     setIsAgentsSidebarVisible,
     setIsBottomTelemetryVisible,
-    setIsClaudeUsageSectionExpanded,
-    setIsCodexUsageSectionExpanded,
     setIsMonitorVisible,
+    setIsOpencodeUsageSectionExpanded,
     setIsRuntimeStatusStripVisible,
     setIsUiStateHydrated,
     setMinimizedTerminalIds,
@@ -107,7 +104,7 @@ export const App = () => {
   const [runningWorkspaceSetupStepId, setRunningWorkspaceSetupStepId] = useState<
     | "initialize-workspace"
     | "ensure-gitignore"
-    | "check-claude"
+    | "check-opencode"
     | "check-git"
     | "check-curl"
     | "create-tentacles"
@@ -284,9 +281,8 @@ export const App = () => {
     };
   }, [refreshColumns, runtimeStateStore, sortTerminalSnapshots]);
 
-  const { codexUsageSnapshot, refreshCodexUsage } = useCodexUsagePolling();
-  const { claudeUsageSnapshot, isRefreshingClaudeUsage, refreshClaudeUsage } =
-    useClaudeUsagePolling();
+  const { opencodeUsageSnapshot, isRefreshingOpencodeUsage, refreshOpencodeUsage } =
+    useOpencodeUsagePolling();
   const backendLivenessStatus = useBackendLivenessPolling();
   const { githubRepoSummary, isRefreshingGitHubSummary, refreshGitHubRepoSummary } =
     useGithubSummaryPolling();
@@ -402,7 +398,7 @@ export const App = () => {
       stepId:
         | "initialize-workspace"
         | "ensure-gitignore"
-        | "check-claude"
+        | "check-opencode"
         | "check-git"
         | "check-curl"
         | "create-tentacles",
@@ -423,9 +419,9 @@ export const App = () => {
         <RuntimeStatusStrip
           sparklinePoints={sparklinePoints}
           usageData={heatmapData}
-          claudeUsage={claudeUsageSnapshot}
-          isRefreshingClaudeUsage={isRefreshingClaudeUsage}
-          onRefreshClaudeUsage={refreshClaudeUsage}
+          opencodeUsage={opencodeUsageSnapshot}
+          isRefreshingOpencodeUsage={isRefreshingOpencodeUsage}
+          onRefreshOpencodeUsage={refreshOpencodeUsage}
         />
       )}
 
@@ -529,7 +525,7 @@ export const App = () => {
                   body: JSON.stringify({
                     name: "tentacle-planner",
                     workspaceMode: "shared",
-                    agentProvider: "claude-code",
+                    agentProvider: "opencode",
                     promptTemplate: "tentacle-planner",
                   }),
                 });

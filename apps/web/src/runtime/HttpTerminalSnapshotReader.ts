@@ -1,4 +1,4 @@
-import type { AgentState, TerminalSnapshot, TerminalSnapshotReader } from "@octogent/core";
+import type { AgentState, TerminalSnapshot, TerminalSnapshotReader } from "@hydra/core";
 
 type HttpResponse = {
   ok: boolean;

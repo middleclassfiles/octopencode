@@ -1,4 +1,4 @@
-import type { WorkspaceSetupStepId } from "@octogent/core";
+import type { WorkspaceSetupStepId } from "@hydra/core";
 
 import {
   deleteUserPrompt,
@@ -28,7 +28,7 @@ const WORKSPACE_SETUP_STEP_PATH_PATTERN = /^\/api\/setup\/steps\/([^/]+)$/;
 const isWorkspaceSetupStepId = (value: string): value is WorkspaceSetupStepId =>
   value === "initialize-workspace" ||
   value === "ensure-gitignore" ||
-  value === "check-claude" ||
+  value === "check-opencode" ||
   value === "check-git" ||
   value === "check-curl" ||
   value === "create-tentacles";
@@ -67,7 +67,7 @@ export const handleWorkspaceSetupRoute: ApiRouteHandler = async (
     initializeWorkspaceFiles(workspaceCwd, projectStateDir);
   } else if (stepId === "ensure-gitignore") {
     ensureWorkspaceGitignore(workspaceCwd);
-  } else if (stepId === "check-claude" || stepId === "check-git" || stepId === "check-curl") {
+  } else if (stepId === "check-opencode" || stepId === "check-git" || stepId === "check-curl") {
     markSetupStepVerified(projectStateDir, stepId);
   }
 
@@ -120,7 +120,7 @@ const HOOK_PATH_PATTERN =
 
 export const handleHookRoute: ApiRouteHandler = async (
   { request, response, requestUrl, corsOrigin },
-  { runtime, invalidateClaudeUsageCache, readClaudeUsageSnapshot },
+  { runtime, invalidateOpencodeUsageCache, readOpencodeUsageSnapshot },
 ) => {
   const match = requestUrl.pathname.match(HOOK_PATH_PATTERN);
   if (!match) {
@@ -139,17 +139,17 @@ export const handleHookRoute: ApiRouteHandler = async (
 
   const hookName = match[1] ?? "";
   // HTTP hooks pass the session ID via header; command hooks via query param.
-  const octogentSessionId =
-    (typeof request.headers["x-octogent-session"] === "string"
-      ? request.headers["x-octogent-session"]
+  const hydraSessionId =
+    (typeof request.headers["x-hydra-session"] === "string"
+      ? request.headers["x-hydra-session"]
       : undefined) ??
-    requestUrl.searchParams.get("octogent_session") ??
+    requestUrl.searchParams.get("hydra_session") ??
     undefined;
-  const result = runtime.handleHook(hookName, body.payload, octogentSessionId);
+  const result = runtime.handleHook(hookName, body.payload, hydraSessionId);
 
   if (hookName === "session-start" || hookName === "stop") {
-    invalidateClaudeUsageCache();
-    void readClaudeUsageSnapshot();
+    invalidateOpencodeUsageCache();
+    void readOpencodeUsageSnapshot();
   }
 
   writeJson(response, 200, result, corsOrigin);

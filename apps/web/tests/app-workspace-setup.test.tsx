@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { WorkspaceSetupSnapshot } from "@octogent/core";
+import type { WorkspaceSetupSnapshot } from "@hydra/core";
 
 import { App } from "../src/App";
 import { jsonResponse, notFoundResponse, resetAppTestHarness } from "./test-utils/appTestHarness";
@@ -17,34 +17,34 @@ const buildSetupSnapshot = (
     {
       id: "initialize-workspace",
       title: "Initialize workspace",
-      description: "Create Octogent project files and runtime directories.",
+      description: "Create Hydra project files and runtime directories.",
       complete: false,
       required: true,
       actionLabel: "Initialize workspace",
-      statusText: "Create .octogent project files before continuing.",
-      guidance: "Workspace initialization failed. Run the Octogent initializer in this repository.",
-      command: "octogent init",
+      statusText: "Create .hydra project files before continuing.",
+      guidance: "Workspace initialization failed. Run the Hydra initializer in this repository.",
+      command: "hydra init",
     },
     {
       id: "ensure-gitignore",
-      title: "Ignore .octogent",
-      description: "Add .octogent to .gitignore, or create .gitignore when it is missing.",
+      title: "Ignore .hydra",
+      description: "Add .hydra to .gitignore, or create .gitignore when it is missing.",
       complete: false,
       required: true,
       actionLabel: "Update .gitignore",
-      statusText: "Add .octogent to .gitignore before creating tentacles.",
+      statusText: "Add .hydra to .gitignore before creating tentacles.",
       guidance:
-        "Git ignore entry is missing. Create or update .gitignore with the Octogent workspace path.",
-      command: "printf '.octogent\\n' >> .gitignore",
+        "Git ignore entry is missing. Create or update .gitignore with the Hydra workspace path.",
+      command: "printf '.hydra\\n' >> .gitignore",
     },
     {
-      id: "check-claude",
-      title: "Check Claude Code",
-      description: "Verify the default Claude Code workflow is available on this machine.",
+      id: "check-opencode",
+      title: "Check Opencode",
+      description: "Verify the default opencode workflow is available on this machine.",
       complete: true,
       required: false,
-      actionLabel: "Check Claude Code",
-      statusText: "Claude Code is available.",
+      actionLabel: "Check Opencode",
+      statusText: "Opencode is available.",
       guidance: null,
       command: null,
     },
@@ -62,7 +62,7 @@ const buildSetupSnapshot = (
     {
       id: "check-curl",
       title: "Check curl",
-      description: "Verify curl is available for Claude hook callbacks.",
+      description: "Verify curl is available for opencode plugin event callbacks.",
       complete: true,
       required: false,
       actionLabel: "Check curl",
@@ -113,19 +113,18 @@ const mockAppRequests = (
       );
     }
 
-    if (url.endsWith("/api/codex/usage") && method === "GET") {
+    if (url.endsWith("/api/opencode/usage") && method === "GET") {
       return jsonResponse({
         status: "unavailable",
         source: "none",
         fetchedAt: "2026-02-27T12:00:00.000Z",
-      });
-    }
-
-    if (url.endsWith("/api/claude/usage") && method === "GET") {
-      return jsonResponse({
-        status: "unavailable",
-        source: "none",
-        fetchedAt: "2026-02-27T12:00:00.000Z",
+        sessionCount: 0,
+        costToday: null,
+        cost7d: null,
+        cost30d: null,
+        tokensToday: null,
+        tokens7d: null,
+        tokens30d: null,
       });
     }
 
@@ -192,7 +191,7 @@ describe("App workspace setup", () => {
               ? {
                   ...step,
                   complete: true,
-                  statusText: ".gitignore covers .octogent.",
+                  statusText: ".gitignore covers .hydra.",
                   guidance: null,
                   command: null,
                 }
@@ -209,7 +208,7 @@ describe("App workspace setup", () => {
     fireEvent.click(within(setupCard).getByRole("button", { name: "Update .gitignore" }));
 
     await waitFor(() => {
-      const gitignoreStep = screen.getByText("Ignore .octogent").closest(".workspace-setup-step");
+      const gitignoreStep = screen.getByText("Ignore .hydra").closest(".workspace-setup-step");
       expect(gitignoreStep).not.toBeNull();
       expect(within(gitignoreStep as HTMLElement).getByText("Done")).toBeInTheDocument();
     });

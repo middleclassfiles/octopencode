@@ -1,9 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { logVerbose } from "../logging";
-import { parseClaudeTranscript } from "./claudeTranscript";
-import { storeClaudeTranscriptTurns } from "./conversations";
+import { storeOpencodeTranscriptTurns } from "./conversations";
+import { buildOpencodePluginSource } from "./opencodePlugin";
+import { exportOpencodeSession } from "./opencodeTranscript";
 import { broadcastMessage } from "./protocol";
 import type { PersistedTerminal, TerminalSession } from "./types";
 
@@ -46,168 +47,68 @@ export const createHookProcessor = (deps: {
     onStateChange,
   } = deps;
 
-  const parseSettingsObject = (fileContents: string): Record<string, unknown> | null => {
-    try {
-      const parsed = JSON.parse(fileContents) as unknown;
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        return null;
-      }
-      return parsed as Record<string, unknown>;
-    } catch {
-      return null;
-    }
-  };
-
-  const mergeHookEntries = (
-    existingValue: unknown,
-    eventName: string,
-    nextEntries: unknown[],
-  ): Record<string, unknown> => {
-    const nextHooks =
-      existingValue && typeof existingValue === "object" && !Array.isArray(existingValue)
-        ? { ...(existingValue as Record<string, unknown>) }
-        : {};
-    const existingEntries = Array.isArray(nextHooks[eventName])
-      ? [...(nextHooks[eventName] as unknown[])]
-      : [];
-    const mergedEntries = [...existingEntries];
-
-    for (const nextEntry of nextEntries) {
-      const serializedNextEntry = JSON.stringify(nextEntry);
-      const alreadyPresent = existingEntries.some(
-        (existingEntry) => JSON.stringify(existingEntry) === serializedNextEntry,
-      );
-      if (!alreadyPresent) {
-        mergedEntries.push(nextEntry);
-      }
-    }
-
-    nextHooks[eventName] = mergedEntries;
-    return nextHooks;
-  };
-
   const installHooksInDirectory = (targetCwd: string) => {
-    const targetClaudeDir = join(targetCwd, ".claude");
-    const targetSettingsPath = join(targetClaudeDir, "settings.json");
+    const pluginDirectory = join(targetCwd, ".opencode", "plugin");
+    const pluginPath = join(pluginDirectory, "hydra-events.js");
     const apiBaseUrl = getApiBaseUrl();
 
-    const hooksConfig = {
-      hooks: {
-        SessionStart: [
-          {
-            matcher: "*",
-            hooks: [
-              {
-                type: "command",
-                command: `curl -s -X POST "${apiBaseUrl}/api/hooks/session-start?octogent_session=$OCTOGENT_SESSION_ID" -H 'Content-Type: application/json' -d @- || true`,
-                timeout: 5,
-              },
-            ],
-          },
-        ],
-        UserPromptSubmit: [
-          {
-            matcher: "*",
-            hooks: [
-              {
-                type: "command",
-                command: `curl -s -X POST "${apiBaseUrl}/api/hooks/user-prompt-submit?octogent_session=$OCTOGENT_SESSION_ID" -H 'Content-Type: application/json' -d @- || true`,
-                timeout: 5,
-              },
-            ],
-          },
-        ],
-        PreToolUse: [
-          {
-            matcher: "*",
-            hooks: [
-              {
-                type: "http",
-                url: `${apiBaseUrl}/api/hooks/pre-tool-use`,
-                headers: { "X-Octogent-Session": "$OCTOGENT_SESSION_ID" },
-                allowedEnvVars: ["OCTOGENT_SESSION_ID"],
-                timeout: 5,
-              },
-            ],
-          },
-        ],
-        PostToolUse: [
-          {
-            matcher: "Edit|Write",
-            hooks: [
-              {
-                type: "http",
-                url: `${apiBaseUrl}/api/code-intel/events`,
-                headers: { "X-Octogent-Session": "$OCTOGENT_SESSION_ID" },
-                allowedEnvVars: ["OCTOGENT_SESSION_ID"],
-                timeout: 5,
-              },
-            ],
-          },
-        ],
-        Notification: [
-          {
-            matcher: "*",
-            hooks: [
-              {
-                type: "http",
-                url: `${apiBaseUrl}/api/hooks/notification`,
-                headers: { "X-Octogent-Session": "$OCTOGENT_SESSION_ID" },
-                allowedEnvVars: ["OCTOGENT_SESSION_ID"],
-                timeout: 5,
-              },
-            ],
-          },
-        ],
-        Stop: [
-          {
-            matcher: "*",
-            hooks: [
-              {
-                type: "command",
-                command: `curl -s -X POST "${apiBaseUrl}/api/hooks/stop?octogent_session=$OCTOGENT_SESSION_ID" -H 'Content-Type: application/json' -d @- || true`,
-                timeout: 15,
-              },
-            ],
-          },
-        ],
-      },
-    };
-
     try {
-      mkdirSync(targetClaudeDir, { recursive: true });
-      const existingSettings = existsSync(targetSettingsPath)
-        ? parseSettingsObject(readFileSync(targetSettingsPath, "utf8"))
-        : null;
-      const mergedSettings =
-        existingSettings && typeof existingSettings === "object" ? { ...existingSettings } : {};
-
-      let mergedHooks =
-        mergedSettings.hooks &&
-        typeof mergedSettings.hooks === "object" &&
-        !Array.isArray(mergedSettings.hooks)
-          ? { ...(mergedSettings.hooks as Record<string, unknown>) }
-          : {};
-
-      for (const [eventName, eventEntries] of Object.entries(hooksConfig.hooks)) {
-        mergedHooks = mergeHookEntries(mergedHooks, eventName, eventEntries);
-      }
-
-      mergedSettings.hooks = mergedHooks;
-      writeFileSync(targetSettingsPath, `${JSON.stringify(mergedSettings, null, 2)}\n`, "utf8");
+      mkdirSync(pluginDirectory, { recursive: true });
+      writeFileSync(pluginPath, buildOpencodePluginSource(apiBaseUrl), "utf8");
     } catch {
-      // Best-effort
+      // Best-effort: the bridge should not block terminal creation.
     }
+  };
+
+  const setAgentState = (
+    session: TerminalSession,
+    sessionId: string,
+    state: TerminalSession["agentState"],
+    toolName?: string,
+  ) => {
+    session.agentState = state;
+    session.stateTracker.forceState(state);
+    onStateChange?.(sessionId, state, toolName);
+    broadcastMessage(session, {
+      type: "state",
+      state,
+      ...(toolName ? { toolName } : {}),
+    });
+  };
+
+  const resolveSessionFromPayload = (
+    payload: Record<string, unknown>,
+    hydraSessionId?: string,
+  ): { terminalId: string; session: TerminalSession } | null => {
+    if (hydraSessionId && sessions.has(hydraSessionId)) {
+      return {
+        terminalId: hydraSessionId,
+        session: sessions.get(hydraSessionId) as TerminalSession,
+      };
+    }
+
+    // opencode sessions report their own session id; bind it to a terminal
+    // when the hydra session param was not provided.
+    const opencodeSessionId = typeof payload.session_id === "string" ? payload.session_id : null;
+    if (!opencodeSessionId) {
+      return null;
+    }
+
+    for (const [terminalId, session] of sessions) {
+      if (session.opencodeSessionId === opencodeSessionId) {
+        return { terminalId, session };
+      }
+    }
+
+    return null;
   };
 
   const handleHook = (
     hookName: string,
     payload: unknown,
-    octogentSessionId?: string,
+    hydraSessionId?: string,
   ): { ok: boolean } => {
-    logVerbose(
-      `[Hook] Received hook: ${hookName} octogentSession=${octogentSessionId ?? "(none)"}`,
-    );
+    logVerbose(`[Hook] Received hook: ${hookName} hydraSession=${hydraSessionId ?? "(none)"}`);
 
     if (!payload || typeof payload !== "object") {
       return { ok: true };
@@ -215,13 +116,33 @@ export const createHookProcessor = (deps: {
 
     const hookPayloadRecord = payload as Record<string, unknown>;
 
-    if (hookName === "notification") {
-      if (!octogentSessionId) {
+    if (hookName === "session-start") {
+      if (!hydraSessionId) {
         return { ok: true };
       }
-      const session = sessions.get(octogentSessionId);
+      const session = sessions.get(hydraSessionId);
       if (!session) {
-        logVerbose(`[Hook] notification: no session for ${octogentSessionId}, skipping.`);
+        return { ok: true };
+      }
+
+      const opencodeSessionId =
+        typeof hookPayloadRecord.session_id === "string" ? hookPayloadRecord.session_id : null;
+      if (opencodeSessionId) {
+        session.opencodeSessionId = opencodeSessionId;
+        logVerbose(
+          `[Hook] Bound opencode session ${opencodeSessionId} → terminal ${hydraSessionId}`,
+        );
+      }
+      return { ok: true };
+    }
+
+    if (hookName === "notification") {
+      if (!hydraSessionId) {
+        return { ok: true };
+      }
+      const session = sessions.get(hydraSessionId);
+      if (!session) {
+        logVerbose(`[Hook] notification: no session for ${hydraSessionId}, skipping.`);
         return { ok: true };
       }
 
@@ -230,35 +151,25 @@ export const createHookProcessor = (deps: {
           ? hookPayloadRecord.notification_type
           : null;
 
-      logVerbose(`[Hook] notification: type=${notificationType} session=${octogentSessionId}`);
+      logVerbose(`[Hook] notification: type=${notificationType} session=${hydraSessionId}`);
 
       if (notificationType === "permission_prompt") {
-        session.agentState = "waiting_for_permission";
-        session.stateTracker.forceState("waiting_for_permission");
-        onStateChange?.(octogentSessionId, "waiting_for_permission", session.lastToolName);
-        broadcastMessage(session, {
-          type: "state",
-          state: "waiting_for_permission",
-          ...(session.lastToolName ? { toolName: session.lastToolName } : {}),
-        });
+        setAgentState(session, hydraSessionId, "waiting_for_permission", session.lastToolName);
       } else if (notificationType === "idle_prompt") {
-        session.agentState = "idle";
-        session.stateTracker.forceState("idle");
-        onStateChange?.(octogentSessionId, "idle");
-        broadcastMessage(session, { type: "state", state: "idle" });
+        setAgentState(session, hydraSessionId, "idle");
 
         // Deliver any queued channel messages now that the agent is idle.
-        deliverChannelMessages(octogentSessionId);
+        deliverChannelMessages(hydraSessionId);
       }
 
       return { ok: true };
     }
 
     if (hookName === "pre-tool-use") {
-      if (!octogentSessionId) {
+      if (!hydraSessionId) {
         return { ok: true };
       }
-      const session = sessions.get(octogentSessionId);
+      const session = sessions.get(hydraSessionId);
       if (!session) {
         return { ok: true };
       }
@@ -266,28 +177,25 @@ export const createHookProcessor = (deps: {
       const toolName =
         typeof hookPayloadRecord.tool_name === "string" ? hookPayloadRecord.tool_name : null;
 
-      logVerbose(`[Hook] pre-tool-use: tool=${toolName} session=${octogentSessionId}`);
+      logVerbose(`[Hook] pre-tool-use: tool=${toolName} session=${hydraSessionId}`);
 
       if (toolName) {
         session.lastToolName = toolName;
       }
 
-      if (toolName === "AskUserQuestion") {
-        session.agentState = "waiting_for_user";
-        session.stateTracker.forceState("waiting_for_user");
-        onStateChange?.(octogentSessionId, "waiting_for_user");
-        broadcastMessage(session, { type: "state", state: "waiting_for_user" });
+      if (toolName === "question") {
+        setAgentState(session, hydraSessionId, "waiting_for_user");
       }
 
       return { ok: true };
     }
 
     if (hookName === "user-prompt-submit") {
-      if (!octogentSessionId) {
+      if (!hydraSessionId) {
         return { ok: true };
       }
 
-      const terminal = terminals.get(octogentSessionId);
+      const terminal = terminals.get(hydraSessionId);
       if (!terminal) {
         return { ok: true };
       }
@@ -334,73 +242,36 @@ export const createHookProcessor = (deps: {
       return { ok: true };
     }
 
-    const hookPayload = payload as Record<string, unknown>;
-    const transcriptPath =
-      typeof hookPayload.transcript_path === "string" ? hookPayload.transcript_path : null;
-    const hookCwd = typeof hookPayload.cwd === "string" ? hookPayload.cwd : null;
-
-    logVerbose(`[Hook] Stop hook: transcriptPath=${transcriptPath}, hookCwd=${hookCwd}`);
-
-    if (!transcriptPath || !hookCwd) {
-      logVerbose("[Hook] Missing transcriptPath or hookCwd, skipping.");
+    const resolved = resolveSessionFromPayload(hookPayloadRecord, hydraSessionId);
+    if (!resolved) {
+      logVerbose("[Hook] stop: no matching session, skipping.");
       return { ok: true };
     }
+    const { terminalId, session } = resolved;
+    const opencodeSessionId =
+      session.opencodeSessionId ??
+      (typeof hookPayloadRecord.session_id === "string" ? hookPayloadRecord.session_id : null);
 
-    let matchedSessionId: string | null = null;
+    logVerbose(
+      `[Hook] Stop hook: terminal=${terminalId} opencodeSession=${opencodeSessionId ?? "(none)"}`,
+    );
 
-    if (octogentSessionId && sessions.has(octogentSessionId)) {
-      matchedSessionId = octogentSessionId;
-      logVerbose(`[Hook] Matched session by octogent_session param: ${matchedSessionId}`);
-    } else if (octogentSessionId) {
-      logVerbose(
-        `[Hook] octogent_session=${octogentSessionId} not found in active sessions, skipping.`,
-      );
-      return { ok: true };
-    } else {
-      logVerbose("[Hook] No octogent_session param — ignoring hook from external Claude session.");
-      return { ok: true };
-    }
-
-    logVerbose(`[Hook] Matched session: ${matchedSessionId}, parsing transcript...`);
-    const turns = parseClaudeTranscript(transcriptPath);
-    logVerbose(`[Hook] Parsed ${turns?.length ?? 0} turns from transcript.`);
-
-    const lastAssistantMessage =
-      typeof hookPayload.last_assistant_message === "string"
-        ? hookPayload.last_assistant_message.trim()
-        : null;
-
-    if (lastAssistantMessage && lastAssistantMessage.length > 0) {
-      const effectiveTurns = turns ?? [];
-      const lastTurn = effectiveTurns.length > 0 ? effectiveTurns[effectiveTurns.length - 1] : null;
-
-      if (!lastTurn || lastTurn.role !== "assistant" || lastTurn.content !== lastAssistantMessage) {
-        const now = new Date().toISOString();
-        effectiveTurns.push({
-          turnId: `turn-${effectiveTurns.length + 1}`,
-          role: "assistant",
-          content: lastAssistantMessage,
-          startedAt: now,
-          endedAt: now,
-        });
-        logVerbose("[Hook] Appended last_assistant_message as final turn.");
+    // Pull the conversation from opencode's own session store.
+    if (opencodeSessionId && !session.hasTranscriptEnded) {
+      const parsed = exportOpencodeSession(opencodeSessionId);
+      if (parsed && parsed.turns.length > 0) {
+        storeOpencodeTranscriptTurns(transcriptDirectoryPath, terminalId, parsed.turns);
+        logVerbose(`[Hook] Stored ${parsed.turns.length} turns for session ${terminalId}.`);
+      } else {
+        logVerbose("[Hook] opencode export returned no turns; skipping store.");
       }
-
-      if (effectiveTurns.length > 0) {
-        storeClaudeTranscriptTurns(transcriptDirectoryPath, matchedSessionId, effectiveTurns);
-        logVerbose(`[Hook] Stored ${effectiveTurns.length} turns for session ${matchedSessionId}.`);
-      }
-    } else if (turns && turns.length > 0) {
-      storeClaudeTranscriptTurns(transcriptDirectoryPath, matchedSessionId, turns);
-      logVerbose(`[Hook] Stored ${turns.length} turns for session ${matchedSessionId}.`);
+      session.hasTranscriptEnded = true;
     }
 
     // Deliver any queued channel messages now that the agent is idle.
-    if (matchedSessionId) {
-      const deliveredMessageCount = deliverChannelMessages(matchedSessionId);
-      if (deliveredMessageCount === 0) {
-        releaseSessionKeepAlive(matchedSessionId);
-      }
+    const deliveredMessageCount = deliverChannelMessages(terminalId);
+    if (deliveredMessageCount === 0) {
+      releaseSessionKeepAlive(terminalId);
     }
 
     return { ok: true };

@@ -1,4 +1,4 @@
-import type { WorkspaceSetupSnapshot, WorkspaceSetupStepId } from "@octogent/core";
+import type { WorkspaceSetupSnapshot, WorkspaceSetupStepId } from "@hydra/core";
 import { OctopusGlyph } from "../EmptyOctopus";
 
 type WorkspaceSetupCardProps = {
@@ -7,14 +7,14 @@ type WorkspaceSetupCardProps = {
   isLoading: boolean;
   error: string | null;
   onRunStep: (stepId: WorkspaceSetupStepId) => void;
-  onLaunchClaudeCode: () => void;
+  onLaunchOpencode: () => void;
   isLaunchingAgent?: boolean;
   isRunningStepId?: WorkspaceSetupStepId | null;
 };
 
 const buildStepSummary = (stepId: WorkspaceSetupStepId, description: string) => {
   if (stepId === "create-tentacles") {
-    return "Launch Claude Code so it can plan and create the first tentacles.";
+    return "Launch Opencode so it can plan and create the first tentacles.";
   }
 
   return description;
@@ -26,7 +26,7 @@ export const WorkspaceSetupCard = ({
   isLoading,
   error,
   onRunStep,
-  onLaunchClaudeCode,
+  onLaunchOpencode,
   isLaunchingAgent,
   isRunningStepId,
 }: WorkspaceSetupCardProps) => (
@@ -47,8 +47,7 @@ export const WorkspaceSetupCard = ({
       <div className="workspace-setup-card-copy">
         <h2 className="workspace-setup-card-title">Workspace Setup</h2>
         <p className="workspace-setup-card-desc">
-          Run each step explicitly. Octogent only marks it done after the workspace is checked
-          again.
+          Run each step explicitly. Hydra only marks it done after the workspace is checked again.
         </p>
       </div>
     </header>
@@ -58,7 +57,7 @@ export const WorkspaceSetupCard = ({
     <div className="workspace-setup-step-list">
       {(workspaceSetup?.steps ?? []).map((step) => {
         const isCreateTentaclesStep = step.id === "create-tentacles";
-        const buttonLabel = isCreateTentaclesStep ? "Launch Claude Code" : step.actionLabel;
+        const buttonLabel = isCreateTentaclesStep ? "Launch Opencode" : step.actionLabel;
         const isButtonDisabled = isCreateTentaclesStep ? isLaunchingAgent : isLoading;
         const isButtonRunning = isCreateTentaclesStep
           ? isLaunchingAgent
@@ -84,7 +83,7 @@ export const WorkspaceSetupCard = ({
                 disabled={Boolean(isButtonDisabled)}
                 onClick={() => {
                   if (isCreateTentaclesStep) {
-                    onLaunchClaudeCode();
+                    onLaunchOpencode();
                     return;
                   }
 

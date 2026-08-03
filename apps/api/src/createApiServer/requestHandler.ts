@@ -3,13 +3,12 @@ import { readFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { extname, join } from "node:path";
 
-import type { UsageChartResponse } from "../claudeSessionScanner";
-import type { ClaudeUsageSnapshot } from "../claudeUsage";
 import type { CodeIntelStore } from "../codeIntelStore";
-import type { CodexUsageSnapshot } from "../codexUsage";
 import type { GitHubRepoSummarySnapshot } from "../githubRepoSummary";
 import { logVerbose } from "../logging";
 import type { MonitorService } from "../monitor";
+import type { UsageChartResponse } from "../opencodeSessionScanner";
+import type { OpencodeUsageSnapshot } from "../opencodeUsage";
 import { handleCodeIntelEventsRoute } from "./codeIntelRoutes";
 import {
   handleConversationExportRoute,
@@ -65,9 +64,8 @@ import {
   handleTerminalsCollectionRoute,
 } from "./terminalRoutes";
 import {
-  handleClaudeUsageRoute,
-  handleCodexUsageRoute,
   handleGithubSummaryRoute,
+  handleOpencodeUsageRoute,
   handleUsageHeatmapRoute,
 } from "./usageRoutes";
 
@@ -94,14 +92,11 @@ type CreateApiRequestHandlerOptions = {
   webDistDir?: string | undefined;
   getApiBaseUrl: () => string;
   getApiPort: () => string;
-  readClaudeUsageSnapshot: () => Promise<ClaudeUsageSnapshot>;
-  readClaudeOauthUsageSnapshot: () => Promise<ClaudeUsageSnapshot>;
-  readClaudeCliUsageSnapshot: () => Promise<ClaudeUsageSnapshot>;
-  readCodexUsageSnapshot: () => Promise<CodexUsageSnapshot>;
+  readOpencodeUsageSnapshot: () => Promise<OpencodeUsageSnapshot>;
   readGithubRepoSummary: () => Promise<GitHubRepoSummarySnapshot>;
   scanUsageHeatmap: (scope: "all" | "project") => Promise<UsageChartResponse>;
   monitorService: MonitorService;
-  invalidateClaudeUsageCache: () => void;
+  invalidateOpencodeUsageCache: () => void;
   codeIntelStore: CodeIntelStore;
   allowRemoteAccess: boolean;
 };
@@ -127,8 +122,7 @@ const API_ROUTE_MAP: ReadonlyMap<string, readonly ApiRouteHandler[]> = new Map([
     ],
   ],
   ["terminal-snapshots", [handleTerminalSnapshotsRoute]],
-  ["codex", [handleCodexUsageRoute]],
-  ["claude", [handleClaudeUsageRoute]],
+  ["opencode", [handleOpencodeUsageRoute]],
   ["analytics", [handleUsageHeatmapRoute]],
   ["github", [handleGithubSummaryRoute]],
   ["setup", [handleWorkspaceSetupRoute]],
@@ -205,14 +199,11 @@ export const createApiRequestHandler = ({
   webDistDir,
   getApiBaseUrl,
   getApiPort,
-  readClaudeUsageSnapshot,
-  readClaudeOauthUsageSnapshot,
-  readClaudeCliUsageSnapshot,
-  readCodexUsageSnapshot,
+  readOpencodeUsageSnapshot,
   readGithubRepoSummary,
   scanUsageHeatmap,
   monitorService,
-  invalidateClaudeUsageCache,
+  invalidateOpencodeUsageCache,
   codeIntelStore,
   allowRemoteAccess,
 }: CreateApiRequestHandlerOptions) => {
@@ -226,14 +217,11 @@ export const createApiRequestHandler = ({
     userPromptsDir,
     getApiBaseUrl,
     getApiPort,
-    readClaudeUsageSnapshot,
-    readClaudeOauthUsageSnapshot,
-    readClaudeCliUsageSnapshot,
-    readCodexUsageSnapshot,
+    readOpencodeUsageSnapshot,
     readGithubRepoSummary,
     scanUsageHeatmap,
     monitorService,
-    invalidateClaudeUsageCache,
+    invalidateOpencodeUsageCache,
     codeIntelStore,
   };
 

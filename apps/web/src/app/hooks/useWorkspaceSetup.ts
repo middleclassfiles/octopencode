@@ -1,4 +1,4 @@
-import type { WorkspaceSetupSnapshot, WorkspaceSetupStepId } from "@octogent/core";
+import type { WorkspaceSetupSnapshot, WorkspaceSetupStepId } from "@hydra/core";
 import { useCallback, useEffect, useState } from "react";
 
 import { buildWorkspaceSetupStepUrl, buildWorkspaceSetupUrl } from "../../runtime/runtimeEndpoints";

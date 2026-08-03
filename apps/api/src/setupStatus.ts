@@ -1,14 +1,14 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-import type { WorkspaceSetupSnapshot, WorkspaceSetupStep } from "@octogent/core";
+import type { WorkspaceSetupSnapshot, WorkspaceSetupStep } from "@hydra/core";
 
 import { readDeckTentacles } from "./deck/readDeckTentacles";
 import {
   deriveProjectIdFromWorkspace,
-  ensureOctogentGitignoreEntry,
+  ensureHydraGitignoreEntry,
   ensureProjectScaffold,
-  hasOctogentGitignoreEntry,
+  hasHydraGitignoreEntry,
   loadProjectConfig,
   migrateStateToGlobal,
   registerProject,
@@ -31,7 +31,7 @@ export const initializeWorkspaceFiles = (workspaceCwd: string, projectStateDir: 
 };
 
 export const ensureWorkspaceGitignore = (workspaceCwd: string) =>
-  ensureOctogentGitignoreEntry(workspaceCwd);
+  ensureHydraGitignoreEntry(workspaceCwd);
 
 export const readWorkspaceSetupSnapshot = (
   workspaceCwd: string,
@@ -39,23 +39,23 @@ export const readWorkspaceSetupSnapshot = (
 ): WorkspaceSetupSnapshot => {
   const prerequisites = collectStartupPrerequisiteReport();
   const projectConfig = loadProjectConfig(workspaceCwd);
-  const octogentDir = join(workspaceCwd, ".octogent");
+  const hydraDir = join(workspaceCwd, ".hydra");
   const hasProjectScaffold =
     projectConfig !== null &&
-    existsSync(join(octogentDir, "tentacles")) &&
-    existsSync(join(octogentDir, "worktrees")) &&
+    existsSync(join(hydraDir, "tentacles")) &&
+    existsSync(join(hydraDir, "worktrees")) &&
     existsSync(join(projectStateDir, "state"));
-  const hasGitignore = hasOctogentGitignoreEntry(workspaceCwd);
+  const hasGitignore = hasHydraGitignoreEntry(workspaceCwd);
   const tentacles = readDeckTentacles(workspaceCwd, projectStateDir);
   const tentacleCount = tentacles.length;
   const hasAnyTentacles = tentacleCount > 0;
   const setupState = readSetupState(projectStateDir);
   const isFirstRun = !hasAnyTentacles && !setupState.tentaclesInitializedAt;
   const verifiedSteps = setupState.verifiedSteps ?? {};
-  const isClaudeVerified = Boolean(verifiedSteps["check-claude"]);
+  const isOpencodeVerified = Boolean(verifiedSteps["check-opencode"]);
   const isGitVerified = Boolean(verifiedSteps["check-git"]);
   const isCurlVerified = Boolean(verifiedSteps["check-curl"]);
-  const hasClaudeCode = prerequisites.availability.claude;
+  const hasOpencode = prerequisites.availability.opencode;
   const hasGit = prerequisites.availability.git;
   const hasCurl = prerequisites.availability.curl;
 
@@ -63,51 +63,51 @@ export const readWorkspaceSetupSnapshot = (
     {
       id: "initialize-workspace",
       title: "Initialize workspace",
-      description: "Create Octogent project files and runtime directories.",
+      description: "Create Hydra project files and runtime directories.",
       complete: hasProjectScaffold,
       required: true,
       actionLabel: "Initialize workspace",
       statusText: hasProjectScaffold
         ? "Workspace files are ready."
-        : "Create .octogent project files before continuing.",
+        : "Create .hydra project files before continuing.",
       guidance: hasProjectScaffold
         ? null
-        : "Workspace initialization failed. Run the Octogent initializer in this repository.",
-      command: hasProjectScaffold ? null : "octogent init",
+        : "Workspace initialization failed. Run the Hydra initializer in this repository.",
+      command: hasProjectScaffold ? null : "hydra init",
     },
     {
       id: "ensure-gitignore",
-      title: "Ignore .octogent",
-      description: "Add .octogent to .gitignore, or create .gitignore when it is missing.",
+      title: "Ignore .hydra",
+      description: "Add .hydra to .gitignore, or create .gitignore when it is missing.",
       complete: hasGitignore,
       required: true,
       actionLabel: "Update .gitignore",
       statusText: hasGitignore
-        ? ".gitignore covers .octogent."
-        : "Add .octogent to .gitignore before creating tentacles.",
+        ? ".gitignore covers .hydra."
+        : "Add .hydra to .gitignore before creating tentacles.",
       guidance: hasGitignore
         ? null
-        : "Git ignore entry is missing. Create or update .gitignore with the Octogent workspace path.",
-      command: hasGitignore ? null : "printf '.octogent\\n' >> .gitignore",
+        : "Git ignore entry is missing. Create or update .gitignore with the Hydra workspace path.",
+      command: hasGitignore ? null : "printf '.hydra\\n' >> .gitignore",
     },
     {
-      id: "check-claude",
-      title: "Check Claude Code",
-      description: "Verify the default Claude Code workflow is available on this machine.",
-      complete: hasClaudeCode && isClaudeVerified,
+      id: "check-opencode",
+      title: "Check Opencode",
+      description: "Verify the default opencode workflow is available on this machine.",
+      complete: hasOpencode && isOpencodeVerified,
       required: false,
-      actionLabel: "Check Claude Code",
-      statusText: hasClaudeCode
-        ? isClaudeVerified
-          ? "Claude Code is available."
-          : "Confirm Claude Code before using the planner."
-        : "Claude Code is unavailable.",
-      guidance: hasClaudeCode
-        ? isClaudeVerified
+      actionLabel: "Check Opencode",
+      statusText: hasOpencode
+        ? isOpencodeVerified
+          ? "Opencode is available."
+          : "Confirm Opencode before using the planner."
+        : "Opencode is unavailable.",
+      guidance: hasOpencode
+        ? isOpencodeVerified
           ? null
-          : "Click to verify the Claude Code workflow on this machine."
-        : "Install Claude Code and log in before using the default Claude workflow.",
-      command: hasClaudeCode ? null : "claude login",
+          : "Click to verify the opencode workflow on this machine."
+        : "Install opencode (https://opencode.ai) and log in before using the default workflow.",
+      command: hasOpencode ? null : "opencode",
     },
     {
       id: "check-git",
@@ -131,20 +131,20 @@ export const readWorkspaceSetupSnapshot = (
     {
       id: "check-curl",
       title: "Check curl",
-      description: "Verify curl is available for Claude hook callbacks.",
+      description: "Verify curl is available for opencode plugin event delivery.",
       complete: hasCurl && isCurlVerified,
       required: false,
       actionLabel: "Check curl",
       statusText: hasCurl
         ? isCurlVerified
           ? "curl is available."
-          : "Confirm curl before using Claude hook callbacks."
+          : "Confirm curl before using event delivery."
         : "curl is unavailable.",
       guidance: hasCurl
         ? isCurlVerified
           ? null
-          : "Click to verify hook callback support on this machine."
-        : "Install curl to restore Claude hook callbacks.",
+          : "Click to verify event delivery support on this machine."
+        : "Install curl to restore opencode event delivery.",
       command: hasCurl ? null : "curl --version",
     },
     {

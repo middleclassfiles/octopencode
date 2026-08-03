@@ -4,7 +4,7 @@ Do NOT rewrite any files until you have presented your proposed changes and the 
 
 ## Process
 
-1. List all tentacle directories under `.octogent/tentacles/`.
+1. List all tentacle directories under `.hydra/tentacles/`.
 2. Read each `todo.md` and the corresponding `CONTEXT.md` (to understand scope).
 3. Analyze all items across all tentacles, then produce a reorganization plan:
    - **Duplicates** — Items that appear in multiple tentacles or are redundant. Specify which copy to keep and which to remove.

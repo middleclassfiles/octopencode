@@ -21,19 +21,18 @@ describe("App UI state persistence", () => {
         return jsonResponse([]);
       }
 
-      if (url.endsWith("/api/claude/usage") && method === "GET") {
+      if (url.endsWith("/api/opencode/usage") && method === "GET") {
         return jsonResponse({
           status: "unavailable",
           fetchedAt: "2026-02-24T10:00:00.000Z",
           source: "none",
-        });
-      }
-
-      if (url.endsWith("/api/codex/usage") && method === "GET") {
-        return jsonResponse({
-          status: "unavailable",
-          fetchedAt: "2026-02-24T10:00:00.000Z",
-          source: "none",
+          sessionCount: 0,
+          costToday: null,
+          cost7d: null,
+          cost30d: null,
+          tokensToday: null,
+          tokens7d: null,
+          tokens30d: null,
         });
       }
 

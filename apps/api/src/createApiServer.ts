@@ -2,20 +2,17 @@ import { cpSync, existsSync as fsExistsSync, mkdirSync, readdirSync } from "node
 import { createServer } from "node:http";
 import { join, resolve } from "node:path";
 
-import { scanClaudeUsageChart } from "./claudeSessionScanner";
-import {
-  invalidateUsageCache as invalidateUsageCacheDefault,
-  readClaudeCliUsageSnapshot as readClaudeCliUsageSnapshotDefault,
-  readClaudeOauthUsageSnapshot as readClaudeOauthUsageSnapshotDefault,
-  readClaudeUsageSnapshot as readClaudeUsageSnapshotDefault,
-} from "./claudeUsage";
 import { createCodeIntelStore } from "./codeIntelStore";
-import { readCodexUsageSnapshot as readCodexUsageSnapshotDefault } from "./codexUsage";
 import { createApiRequestHandler } from "./createApiServer/requestHandler";
 import type { CreateApiServerOptions } from "./createApiServer/types";
 import { createUpgradeHandler } from "./createApiServer/upgradeHandler";
 import { readGithubRepoSummary as readGithubRepoSummaryDefault } from "./githubRepoSummary";
 import { createMonitorService } from "./monitor";
+import { scanOpencodeUsageChart } from "./opencodeSessionScanner";
+import {
+  invalidateUsageCache as invalidateOpencodeUsageCacheDefault,
+  readOpencodeUsageSnapshot as readOpencodeUsageSnapshotDefault,
+} from "./opencodeUsage";
 import { createTerminalRuntime } from "./terminalRuntime";
 
 export const createApiServer = ({
@@ -25,19 +22,16 @@ export const createApiServer = ({
   webDistDir,
   apiBaseUrl,
   gitClient,
-  readClaudeUsageSnapshot,
-  readClaudeOauthUsageSnapshot,
-  readClaudeCliUsageSnapshot,
-  readCodexUsageSnapshot = readCodexUsageSnapshotDefault,
+  readOpencodeUsageSnapshot,
   readGithubRepoSummary,
   scanUsageHeatmap,
   monitorService,
-  invalidateClaudeUsageCache = invalidateUsageCacheDefault,
+  invalidateOpencodeUsageCache = invalidateOpencodeUsageCacheDefault,
   allowRemoteAccess = false,
 }: CreateApiServerOptions = {}) => {
   const resolvedWorkspaceCwd = workspaceCwd ?? process.cwd();
-  // State lives in ~/.octogent/projects/<name>/ when provided, else falls back to <project>/.octogent/
-  const resolvedStateDir = projectStateDir ?? join(resolvedWorkspaceCwd, ".octogent");
+  // State lives in ~/.hydra/projects/<name>/ when provided, else falls back to <project>/.hydra/
+  const resolvedStateDir = projectStateDir ?? join(resolvedWorkspaceCwd, ".hydra");
   let resolvedApiBaseUrl = apiBaseUrl ?? "http://127.0.0.1:8787";
   const getApiBaseUrl = () => resolvedApiBaseUrl;
   const getApiPort = () => {
@@ -67,24 +61,11 @@ export const createApiServer = ({
   // Keep the mirrored state copy as a fallback for packaged/runtime setups
   // where the source prompts directory is unavailable.
   const resolvedPromptsDir = fsExistsSync(sourceDir) ? sourceDir : resolvedCorePromptsDir;
-  const readClaudeUsageSnapshotWithDefault =
-    readClaudeUsageSnapshot ??
+  const readOpencodeUsageSnapshotWithDefault =
+    readOpencodeUsageSnapshot ??
     (() =>
-      readClaudeUsageSnapshotDefault({
-        projectStateDir: resolvedStateDir,
-        backgroundRefreshOnly: true,
-      }));
-  const readClaudeOauthUsageSnapshotWithDefault =
-    readClaudeOauthUsageSnapshot ??
-    (() =>
-      readClaudeOauthUsageSnapshotDefault({
-        projectStateDir: resolvedStateDir,
-      }));
-  const readClaudeCliUsageSnapshotWithDefault =
-    readClaudeCliUsageSnapshot ??
-    (() =>
-      readClaudeCliUsageSnapshotDefault({
-        projectStateDir: resolvedStateDir,
+      readOpencodeUsageSnapshotDefault({
+        projectDirectory: resolvedWorkspaceCwd,
       }));
   const readGithubRepoSummaryWithDefault =
     readGithubRepoSummary ??
@@ -110,7 +91,7 @@ export const createApiServer = ({
     });
   const scanUsageHeatmapWithDefault =
     scanUsageHeatmap ??
-    ((scope: "all" | "project") => scanClaudeUsageChart(scope, resolvedWorkspaceCwd));
+    ((scope: "all" | "project") => scanOpencodeUsageChart(scope, resolvedWorkspaceCwd));
 
   const codeIntelStore = createCodeIntelStore(resolvedStateDir);
 
@@ -123,14 +104,11 @@ export const createApiServer = ({
     webDistDir,
     getApiBaseUrl,
     getApiPort,
-    readClaudeUsageSnapshot: readClaudeUsageSnapshotWithDefault,
-    readClaudeOauthUsageSnapshot: readClaudeOauthUsageSnapshotWithDefault,
-    readClaudeCliUsageSnapshot: readClaudeCliUsageSnapshotWithDefault,
-    readCodexUsageSnapshot,
+    readOpencodeUsageSnapshot: readOpencodeUsageSnapshotWithDefault,
     readGithubRepoSummary: readGithubRepoSummaryWithDefault,
     scanUsageHeatmap: scanUsageHeatmapWithDefault,
     monitorService: monitorServiceWithDefault,
-    invalidateClaudeUsageCache,
+    invalidateOpencodeUsageCache,
     codeIntelStore,
     allowRemoteAccess,
   });

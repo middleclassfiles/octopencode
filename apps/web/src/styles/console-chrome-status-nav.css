@@ -224,7 +224,7 @@
   fill: #ff5722;
 }
 
-.console-status-claude-usage {
+.console-status-opencode-usage {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -233,7 +233,7 @@
   max-width: 400px;
 }
 
-.console-status-claude-usage-refresh {
+.console-status-opencode-usage-refresh {
   background: none;
   border: 1px solid #3a3f4b;
   color: #6f7782;
@@ -246,16 +246,16 @@
   transition: color 0.15s, border-color 0.15s;
 }
 
-.console-status-claude-usage-refresh:hover {
+.console-status-opencode-usage-refresh:hover {
   color: #e8e8e8;
   border-color: #6f7782;
 }
 
-.console-status-claude-usage-refresh[data-refreshing="true"] {
+.console-status-opencode-usage-refresh[data-refreshing="true"] {
   animation: console-status-refresh-spin 0.9s linear infinite;
 }
 
-.console-status-claude-usage-title {
+.console-status-opencode-usage-title {
   color: #6f7782;
   font-size: 0.72rem;
   font-weight: 700;
@@ -266,7 +266,7 @@
   flex-shrink: 0;
 }
 
-.console-status-claude-usage-bars {
+.console-status-opencode-usage-bars {
   display: flex;
   flex-direction: column;
   justify-content: center;

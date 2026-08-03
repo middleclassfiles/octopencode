@@ -22,21 +22,21 @@ Not every codebase needs all of these. Tailor the list to what actually exists a
 
 ## Step 3: Create tentacles
 
-For each approved department, use the Octogent CLI:
+For each approved department, use the Hydra CLI:
 
 ```bash
-./bin/octogent tentacle create <name> --description "Short description of scope and purpose."
+./bin/hydra tentacle create <name> --description "Short description of scope and purpose."
 ```
 
 To check what already exists:
 
 ```bash
-./bin/octogent tentacle list
+./bin/hydra tentacle list
 ```
 
 Use lowercase kebab-case for names (e.g., `core-logic`, `frontend-ui`, `infrastructure`).
 
-This creates the tentacle folder at `.octogent/tentacles/<name>/` with an `CONTEXT.md` and `todo.md` file.
+This creates the tentacle folder at `.hydra/tentacles/<name>/` with an `CONTEXT.md` and `todo.md` file.
 
 ## Step 4: Enrich each tentacle
 
@@ -45,13 +45,13 @@ For each created tentacle, **read the actual source code** in the directories th
 Before you finalize a tentacle's `CONTEXT.md`, check whether project Claude Code skills exist in `.claude/skills/`. Each skill lives in its own folder with a `SKILL.md` file. If you find relevant skills for that tentacle, append this exact block at the bottom of `CONTEXT.md`:
 
 ```markdown
-<!-- octogent:suggested-skills:start -->
+<!-- hydra:suggested-skills:start -->
 ## Suggested Skills
 
 You can use these skills if you need to.
 
 - `skill-name`
-<!-- octogent:suggested-skills:end -->
+<!-- hydra:suggested-skills:end -->
 ```
 
 Only include skills that are genuinely useful for that tentacle's scope, and replace `skill-name` with the actual discovered skill names.

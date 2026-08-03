@@ -10,8 +10,7 @@ const persistedUiStateMock = {
   isActiveAgentsSectionExpanded: true,
   isAgentsSidebarVisible: false,
   isBottomTelemetryVisible: false,
-  isClaudeUsageSectionExpanded: true,
-  isCodexUsageSectionExpanded: true,
+  isOpencodeUsageSectionExpanded: true,
   isMonitorVisible: false,
   isRuntimeStatusStripVisible: false,
   isUiStateHydrated: true,
@@ -20,8 +19,7 @@ const persistedUiStateMock = {
   setIsActiveAgentsSectionExpanded: vi.fn(),
   setIsAgentsSidebarVisible: vi.fn(),
   setIsBottomTelemetryVisible: vi.fn(),
-  setIsClaudeUsageSectionExpanded: vi.fn(),
-  setIsCodexUsageSectionExpanded: vi.fn(),
+  setIsOpencodeUsageSectionExpanded: vi.fn(),
   setIsMonitorVisible: vi.fn(),
   setIsRuntimeStatusStripVisible: vi.fn(),
   setIsUiStateHydrated: vi.fn(),
@@ -42,18 +40,11 @@ vi.mock("../src/app/hooks/useBackendLivenessPolling", () => ({
   useBackendLivenessPolling: () => "online",
 }));
 
-vi.mock("../src/app/hooks/useClaudeUsagePolling", () => ({
-  useClaudeUsagePolling: () => ({
-    claudeUsageSnapshot: null,
-    isRefreshingClaudeUsage: false,
-    refreshClaudeUsage: vi.fn(),
-  }),
-}));
-
-vi.mock("../src/app/hooks/useCodexUsagePolling", () => ({
-  useCodexUsagePolling: () => ({
-    codexUsageSnapshot: null,
-    refreshCodexUsage: vi.fn(),
+vi.mock("../src/app/hooks/useOpencodeUsagePolling", () => ({
+  useOpencodeUsagePolling: () => ({
+    opencodeUsageSnapshot: null,
+    isRefreshingOpencodeUsage: false,
+    refreshOpencodeUsage: vi.fn(),
   }),
 }));
 

@@ -8,8 +8,8 @@ import type {
   TentacleWorkspaceMode,
   TerminalAgentProvider,
   TerminalLifecycleState,
-} from "@octogent/core";
-import { isTerminalAgentProvider, isTerminalCompletionSoundId } from "@octogent/core";
+} from "@hydra/core";
+import { isTerminalAgentProvider, isTerminalCompletionSoundId } from "@hydra/core";
 import type { IPty } from "node-pty";
 import type { WebSocket } from "ws";
 
@@ -83,6 +83,7 @@ export type TerminalSession = {
   isClosed?: boolean;
   hasSeenProcessing?: boolean;
   lastToolName?: string | undefined;
+  opencodeSessionId?: string | undefined;
 };
 
 export type TerminalNameOrigin = "generated" | "user" | "prompt";

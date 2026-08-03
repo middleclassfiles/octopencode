@@ -35,8 +35,7 @@
 
 .console-shell .active-agents-section-meta,
 .console-shell .active-agents-group-count,
-.console-shell .active-agents-agent-row--child,
-.console-shell .active-agents-codex-usage-label {
+.console-shell .active-agents-agent-row--child {
   color: #a9b0ba;
   font-size: 0.72rem;
 }
@@ -54,22 +53,6 @@
 .console-shell .active-agents-agent-row--root {
   background: #121a23;
   border-left-color: #d6a21a;
-}
-
-.console-shell .active-agents-codex-usage {
-  border-color: #2b2f36;
-  background: #0c131b;
-}
-
-.console-shell .active-agents-codex-usage-meta {
-  color: #d6a21a;
-  font-size: 0.7rem;
-}
-
-.console-shell .active-agents-codex-usage-percent,
-.console-shell .active-agents-codex-usage-credits,
-.console-shell .active-agents-codex-usage-status {
-  font-size: 0.74rem;
 }
 
 .console-shell .terminals {

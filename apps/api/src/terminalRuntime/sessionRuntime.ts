@@ -50,6 +50,7 @@ type CreateSessionRuntimeOptions = {
   onStateChange?: (terminalId: string, state: AgentRuntimeState, toolName?: string) => void;
   onSessionStart?: (terminalId: string, details: TerminalSessionStartDetails) => void;
   onSessionEnd?: (terminalId: string, details: TerminalSessionEndDetails) => void;
+  getApiBaseUrl?: () => string;
 };
 
 const ANSI_BEL = String.fromCharCode(0x07);
@@ -73,6 +74,7 @@ export const createSessionRuntime = ({
   onStateChange,
   onSessionStart,
   onSessionEnd,
+  getApiBaseUrl = () => process.env.HYDRA_API_ORIGIN ?? "http://127.0.0.1:8787",
 }: CreateSessionRuntimeOptions) => {
   const DEFAULT_PTY_COLS = 120;
   const DEFAULT_PTY_ROWS = 35;
@@ -479,7 +481,7 @@ export const createSessionRuntime = ({
     appendDebugLog(session, `bootstrap session=${sessionId} command=${bootstrapCommand}`);
     session.pty.write(`${bootstrapCommand}\r`);
 
-    // Schedule initial prompt injection after Claude Code has had time to boot.
+    // Schedule initial prompt injection after opencode has had time to boot.
     if (session.initialPrompt && !session.isInitialPromptSent) {
       schedulePromptTimer(
         session,
@@ -532,7 +534,7 @@ export const createSessionRuntime = ({
 
     if (sessions.size >= sessionLimit) {
       throw new Error(
-        `Terminal session limit reached (${sessionLimit}). Close an existing terminal session or increase OCTOGENT_MAX_TERMINAL_SESSIONS.`,
+        `Terminal session limit reached (${sessionLimit}). Close an existing terminal session or increase HYDRA_MAX_TERMINAL_SESSIONS.`,
       );
     }
 
@@ -552,7 +554,10 @@ export const createSessionRuntime = ({
         cols: DEFAULT_PTY_COLS,
         rows: DEFAULT_PTY_ROWS,
         cwd: tentacleCwd,
-        env: createShellEnvironment({ octogentSessionId: sessionId }),
+        env: createShellEnvironment({
+          hydraSessionId: sessionId,
+          hydraApiBaseUrl: getApiBaseUrl(),
+        }),
         name: "xterm-256color",
       });
     } catch (error) {

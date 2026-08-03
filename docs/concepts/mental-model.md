@@ -1,19 +1,19 @@
 # Mental Model
 
-This page is for the exact model behind Octogent. The README is the pitch. This page is the boundary map.
+This page is for the exact model behind Hydra. The README is the pitch. This page is the boundary map.
 
 ## Architectural layers
 
-Octogent separates durable work context from live terminal execution.
+Hydra separates durable work context from live terminal execution.
 
 ```mermaid
 flowchart TD
   Human[Developer] --> Deck[Deck and Canvas UI]
   Deck --> API[Local API]
-  API --> Files[".octogent/tentacles/*"]
-  API --> State["~/.octogent/projects/<id>/state/*"]
+  API --> Files[".hydra/tentacles/*"]
+  API --> State["~/.hydra/projects/<id>/state/*"]
   API --> PTY[PTY-backed agent sessions]
-  PTY --> Hooks[Claude hooks]
+  PTY --> Hooks[Opencode plugin events]
   Hooks --> API
 ```
 
@@ -49,7 +49,7 @@ A tentacle can be used with:
 
 The tentacle decides *what the job is about*. The worktree decides *where the code changes happen*.
 
-In shared mode, the PTY starts in the main workspace. In worktree mode, the API creates `.octogent/worktrees/<worktree-id>/` on branch `octogent/<worktree-id>` and starts the PTY there. The agent-facing context still stays in `.octogent/tentacles/<tentacle-id>/`.
+In shared mode, the PTY starts in the main workspace. In worktree mode, the API creates `.hydra/worktrees/<worktree-id>/` on branch `hydra/<worktree-id>` and starts the PTY there. The agent-facing context still stays in `.hydra/tentacles/<tentacle-id>/`.
 
 ## What belongs in files
 
@@ -78,7 +78,7 @@ The runtime owns:
 
 That data helps the app run, but it is not the same thing as the durable job context. Terminal records survive API restarts. PTY sessions, WebSocket clients, and channel queues do not.
 
-On startup, Octogent reloads terminal records from `tentacles.json`. If a record says it was running, Octogent cannot reattach to the old in-memory PTY, so the record is reconciled to `stale` with a lifecycle reason.
+On startup, Hydra reloads terminal records from `tentacles.json`. If a record says it was running, Hydra cannot reattach to the old in-memory PTY, so the record is reconciled to `stale` with a lifecycle reason.
 
 ## How delegation is supposed to work
 
@@ -92,11 +92,11 @@ The expected flow is:
 6. workers report status through short channel messages and by leaving durable notes in files
 7. the parent or human reviews the result and updates `todo.md`
 
-If the boundary is vague, the orchestration gets worse. Octogent helps organize work, but it does not rescue a poorly defined job.
+If the boundary is vague, the orchestration gets worse. Hydra helps organize work, but it does not rescue a poorly defined job.
 
 ## What the project is actually trying to prove
 
 - terminal coding agents can be treated as building blocks inside an orchestration layer
 - file-based context is more reliable than trying to keep everything inside one long conversation
-- one Claude Code session can coordinate other Claude Code sessions in a visible way
+- one opencode session can coordinate other opencode sessions in a visible way
 - simple task lists and short messages are enough for some useful multi-agent workflows

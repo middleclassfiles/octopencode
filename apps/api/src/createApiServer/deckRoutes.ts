@@ -44,7 +44,7 @@ const buildSingleTodoWorkerPrompt = async ({
   terminalId: string;
   apiPort: string;
 }) => {
-  const tentacleContextPath = join(workspaceCwd, ".octogent/tentacles", tentacleId);
+  const tentacleContextPath = join(workspaceCwd, ".hydra/tentacles", tentacleId);
 
   return await resolvePrompt(promptsDir, "swarm-worker", {
     tentacleName,
@@ -604,7 +604,7 @@ export const handleDeckTentacleSwarmRoute: ApiRouteHandler = async (
   const tentacleTerminal = existingTerminals.find(
     (t) => t.tentacleId === tentacleId && t.workspaceMode === "worktree",
   );
-  const baseRef = tentacleTerminal ? `octogent/${tentacleId}` : "HEAD";
+  const baseRef = tentacleTerminal ? `hydra/${tentacleId}` : "HEAD";
 
   // Resolve the tentacle display name for prompts.
   const deckTentacles = readDeckTentacles(workspaceCwd, projectStateDir);
@@ -614,7 +614,7 @@ export const handleDeckTentacleSwarmRoute: ApiRouteHandler = async (
   const apiPort = getApiPort();
   const needsParent = targetItems.length > 1;
   const parentTerminalId = needsParent ? `${tentacleId}-swarm-parent` : null;
-  const tentacleContextPath = join(workspaceCwd, ".octogent/tentacles", tentacleId);
+  const tentacleContextPath = join(workspaceCwd, ".hydra/tentacles", tentacleId);
   const workers = targetItems.map((item) => ({
     terminalId: `${tentacleId}-swarm-${item.index}`,
     todoIndex: item.index,
@@ -628,7 +628,7 @@ export const handleDeckTentacleSwarmRoute: ApiRouteHandler = async (
 
   const buildWorkerGuidelines = (terminalId: string): string =>
     workerWorkspaceMode === "worktree"
-      ? `- You are working in an isolated git worktree on branch \`octogent/${terminalId}\`. Make changes freely without worrying about conflicts with other agents.`
+      ? `- You are working in an isolated git worktree on branch \`hydra/${terminalId}\`. Make changes freely without worrying about conflicts with other agents.`
       : [
           "- You are working in the shared main workspace. Other workers may touch the same files, so keep your edits narrow, avoid broad refactors, and coordinate via your parent if you hit overlap.",
           "- Do NOT create commits in shared mode. Leave your changes uncommitted for the coordinator to review and commit later.",
@@ -654,7 +654,7 @@ export const handleDeckTentacleSwarmRoute: ApiRouteHandler = async (
           "Each worker commits to its own isolated branch:",
           "",
           ...workers.map(
-            (w) => `- \`octogent/${w.terminalId}\` — item #${w.todoIndex}: ${w.todoText}`,
+            (w) => `- \`hydra/${w.terminalId}\` — item #${w.todoIndex}: ${w.todoText}`,
           ),
         ].join("\n")
       : [
@@ -672,9 +672,9 @@ export const handleDeckTentacleSwarmRoute: ApiRouteHandler = async (
           "",
           `1. **Create an integration branch** from \`${baseBranch}\`. First check if a stale integration branch exists from a previous swarm attempt — if so, delete it before proceeding:`,
           "   ```bash",
-          `   git branch -D octogent_integration_${tentacleId} 2>/dev/null || true`,
+          `   git branch -D hydra_integration_${tentacleId} 2>/dev/null || true`,
           `   git checkout ${baseBranch}`,
-          `   git checkout -b octogent_integration_${tentacleId}`,
+          `   git checkout -b hydra_integration_${tentacleId}`,
           "   ```",
           "",
           "2. **Merge each worker branch** into the integration branch one at a time. Start with the branch most likely to merge cleanly (fewest changes):",
@@ -688,16 +688,16 @@ export const handleDeckTentacleSwarmRoute: ApiRouteHandler = async (
           "4. **If tests pass**, merge the integration branch into the base branch:",
           "   ```bash",
           `   git checkout ${baseBranch}`,
-          `   git merge octogent_integration_${tentacleId} --no-edit`,
+          `   git merge hydra_integration_${tentacleId} --no-edit`,
           "   ```",
           "",
           "5. **If tests fail**, investigate and fix before merging. Do not merge broken code.",
           "",
-          `6. **Update tentacle state/docs** before finalizing. Mark completed items as done in \`.octogent/tentacles/${tentacleId}/todo.md\`, and update \`.octogent/tentacles/${tentacleId}/CONTEXT.md\` or other tentacle markdown files if the merged work changed the reality they describe.`,
+          `6. **Update tentacle state/docs** before finalizing. Mark completed items as done in \`.hydra/tentacles/${tentacleId}/todo.md\`, and update \`.hydra/tentacles/${tentacleId}/CONTEXT.md\` or other tentacle markdown files if the merged work changed the reality they describe.`,
           "",
           "7. **Clean up** the integration branch:",
           "   ```bash",
-          `   git branch -d octogent_integration_${tentacleId}`,
+          `   git branch -d hydra_integration_${tentacleId}`,
           "   ```",
           "",
           "### Merge failure recovery",
@@ -719,7 +719,7 @@ export const handleDeckTentacleSwarmRoute: ApiRouteHandler = async (
           "",
           "4. **If tests fail**, investigate and coordinate fixes. Do not declare the swarm complete while the workspace is broken.",
           "",
-          `5. **Update tentacle state/docs** before asking for approval. Mark completed items as done in \`.octogent/tentacles/${tentacleId}/todo.md\`, and update \`.octogent/tentacles/${tentacleId}/CONTEXT.md\` or other tentacle markdown files if the completed work changed the reality they describe. If no tentacle docs need updates, say that explicitly.`,
+          `5. **Update tentacle state/docs** before asking for approval. Mark completed items as done in \`.hydra/tentacles/${tentacleId}/todo.md\`, and update \`.hydra/tentacles/${tentacleId}/CONTEXT.md\` or other tentacle markdown files if the completed work changed the reality they describe. If no tentacle docs need updates, say that explicitly.`,
           "",
           "6. **Wait for explicit user approval** before creating any commit on the shared main branch. Present a concise summary of the reviewed diff, test results, and tentacle-doc updates first.",
           "",
@@ -787,11 +787,11 @@ export const handleDeckTentacleSwarmRoute: ApiRouteHandler = async (
             `Your parent coordinator is at terminal \`${parentTerminalId}\`.`,
             "When you complete your task, report back:",
             "```bash",
-            `node bin/octogent channel send ${parentTerminalId} "DONE: ${item.text}" --from ${workerTerminalId}`,
+            `node bin/hydra channel send ${parentTerminalId} "DONE: ${item.text}" --from ${workerTerminalId}`,
             "```",
             "If you are blocked, ask for help:",
             "```bash",
-            `node bin/octogent channel send ${parentTerminalId} "BLOCKED: <describe what you need>" --from ${workerTerminalId}`,
+            `node bin/hydra channel send ${parentTerminalId} "BLOCKED: <describe what you need>" --from ${workerTerminalId}`,
             "```",
           ].join("\n");
 
@@ -812,7 +812,7 @@ export const handleDeckTentacleSwarmRoute: ApiRouteHandler = async (
           });
 
           const commandParts = [
-            "node bin/octogent terminal create",
+            "node bin/hydra terminal create",
             `--terminal-id ${shellSingleQuote(workerTerminalId)}`,
             `--tentacle-id ${shellSingleQuote(tentacleId)}`,
             `--parent-terminal-id ${shellSingleQuote(parentTerminalId)}`,

@@ -36,7 +36,7 @@ const isTerminalLifecycleState = (value: unknown): value is TerminalLifecycleSta
   value === "stale";
 
 const inferTerminalNameOrigin = (terminalId: string, tentacleName: string): TerminalNameOrigin => {
-  if (tentacleName === terminalId || /^Octogent Terminal \d+$/.test(tentacleName)) {
+  if (tentacleName === terminalId || /^Hydra Terminal \d+$/.test(tentacleName)) {
     return "generated";
   }
 
@@ -74,20 +74,23 @@ const parsePersistedUiState = (value: unknown): PersistedUiState => {
     nextState.isBottomTelemetryVisible = value.isBottomTelemetryVisible;
   }
 
-  if (typeof value.isCodexUsageVisible === "boolean") {
-    nextState.isCodexUsageVisible = value.isCodexUsageVisible;
+  const legacyUsageVisible = value.isClaudeUsageVisible ?? value.isCodexUsageVisible;
+  if (typeof legacyUsageVisible === "boolean") {
+    nextState.isOpencodeUsageVisible = legacyUsageVisible;
   }
 
-  if (typeof value.isClaudeUsageVisible === "boolean") {
-    nextState.isClaudeUsageVisible = value.isClaudeUsageVisible;
+  if (typeof value.isOpencodeUsageVisible === "boolean") {
+    nextState.isOpencodeUsageVisible = value.isOpencodeUsageVisible;
   }
 
-  if (typeof value.isClaudeUsageSectionExpanded === "boolean") {
-    nextState.isClaudeUsageSectionExpanded = value.isClaudeUsageSectionExpanded;
+  const legacySectionExpanded =
+    value.isClaudeUsageSectionExpanded ?? value.isCodexUsageSectionExpanded;
+  if (typeof legacySectionExpanded === "boolean") {
+    nextState.isOpencodeUsageSectionExpanded = legacySectionExpanded;
   }
 
-  if (typeof value.isCodexUsageSectionExpanded === "boolean") {
-    nextState.isCodexUsageSectionExpanded = value.isCodexUsageSectionExpanded;
+  if (typeof value.isOpencodeUsageSectionExpanded === "boolean") {
+    nextState.isOpencodeUsageSectionExpanded = value.isOpencodeUsageSectionExpanded;
   }
 
   const completionSoundValue = value.terminalCompletionSound;

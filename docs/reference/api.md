@@ -1,6 +1,6 @@
 # API Reference
 
-Octogent exposes a local HTTP and WebSocket API.
+Hydra exposes a local HTTP and WebSocket API.
 
 The API has two different kinds of state:
 
@@ -20,7 +20,7 @@ Most HTTP routes either read/write persisted files or create runtime records. We
 - `POST /api/terminals/:terminalId/kill` - kills an active session or recorded stale process
 - `WS /api/terminals/:terminalId/ws` - streams live terminal IO over WebSocket
 
-Terminal snapshots include `lifecycleState` when known. Supported lifecycle states are `registered`, `running`, `stopped`, `exited`, and `stale`. Stale terminals are records that were persisted as running but could not be reattached to a live Octogent PTY session after startup.
+Terminal snapshots include `lifecycleState` when known. Supported lifecycle states are `registered`, `running`, `stopped`, `exited`, and `stale`. Stale terminals are records that were persisted as running but could not be reattached to a live Hydra PTY session after startup.
 
 Creating a terminal registers metadata first. A PTY starts immediately only when an initial prompt is provided, a WebSocket attaches, or an internal direct listener starts the session. Worktree terminals also create their worktree before the terminal record is exposed.
 
@@ -35,11 +35,11 @@ Creating a terminal registers metadata first. A PTY starts immediately only when
 
 ## Deck and tentacles
 
-- `GET /api/deck/skills` - lists available Claude Code skills discovered from project-local `.claude/skills/<skill>/SKILL.md` entries
+- `GET /api/deck/skills` - lists available opencode skills discovered from project-local `.opencode/skills/<skill>/SKILL.md` entries
 - `GET /api/deck/tentacles` - lists tentacles with metadata, vault files, and todo progress
 - `POST /api/deck/tentacles` - creates a new tentacle
 - `DELETE /api/deck/tentacles/:tentacleId` - deletes a tentacle and its stored files
-- `PATCH /api/deck/tentacles/:tentacleId/skills` - updates the tentacle's suggested Claude Code skills and rewrites the managed block in `CONTEXT.md`
+- `PATCH /api/deck/tentacles/:tentacleId/skills` - updates the tentacle's suggested opencode skills and rewrites the managed block in `CONTEXT.md`
 - `POST /api/deck/tentacles/:tentacleId/todo` - adds a todo item to `todo.md`
 - `PATCH /api/deck/tentacles/:tentacleId/todo/toggle` - marks a todo item done or undone
 - `PATCH /api/deck/tentacles/:tentacleId/todo/edit` - edits the text of a todo item
@@ -47,7 +47,7 @@ Creating a terminal registers metadata first. A PTY starts immediately only when
 - `GET /api/deck/tentacles/:tentacleId/files/:filename` - reads one markdown file from the tentacle vault
 - `POST /api/deck/tentacles/:tentacleId/swarm` - spawns worker terminals from incomplete todo items
 
-Deck routes treat `.octogent/tentacles/<tentacle-id>/` as the source of truth for agent-facing context. Todo operations update `todo.md` by parsed item index. Swarm operations derive worker assignments from incomplete parsed todo items.
+Deck routes treat `.hydra/tentacles/<tentacle-id>/` as the source of truth for agent-facing context. Todo operations update `todo.md` by parsed item index. Swarm operations derive worker assignments from incomplete parsed todo items.
 
 ## Prompts
 
@@ -71,7 +71,7 @@ Channel messages are queued in memory. The POST body provides `fromTerminalId` a
 
 ## Hooks
 
-- `POST /api/hooks/:hookName` - ingests lifecycle events coming from Claude Code hooks
+- `POST /api/hooks/:hookName` - ingests lifecycle events coming from the opencode bridge plugin
 
 Current hook names:
 
@@ -83,10 +83,9 @@ Current hook names:
 
 ## Usage and telemetry
 
-- `GET /api/codex/usage` - returns Codex usage data when available
-- `GET /api/claude/usage` - returns Claude usage data when available
+- `GET /api/opencode/usage` - returns opencode usage data read from the local opencode database
 - `GET /api/github/summary` - returns GitHub summary and repo telemetry data
-- `GET /api/analytics/usage-heatmap?scope=all|project` - returns heatmap data from Claude session history
+- `GET /api/analytics/usage-heatmap?scope=all|project` - returns token usage heatmap data from opencode session history
 
 ## UI state
 

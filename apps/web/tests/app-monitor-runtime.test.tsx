@@ -26,19 +26,18 @@ describe("App Monitor runtime", () => {
         return jsonResponse([]);
       }
 
-      if (url.endsWith("/api/codex/usage") && method === "GET") {
+      if (url.endsWith("/api/opencode/usage") && method === "GET") {
         return jsonResponse({
           status: "unavailable",
           source: "none",
           fetchedAt: "2026-02-28T12:00:00.000Z",
-        });
-      }
-
-      if (url.endsWith("/api/claude/usage") && method === "GET") {
-        return jsonResponse({
-          status: "unavailable",
-          source: "none",
-          fetchedAt: "2026-02-28T12:00:00.000Z",
+          sessionCount: 0,
+          costToday: null,
+          cost7d: null,
+          cost30d: null,
+          tokensToday: null,
+          tokens7d: null,
+          tokens30d: null,
         });
       }
 
@@ -295,19 +294,18 @@ describe("App Monitor runtime", () => {
         return jsonResponse([]);
       }
 
-      if (url.endsWith("/api/codex/usage") && method === "GET") {
+      if (url.endsWith("/api/opencode/usage") && method === "GET") {
         return jsonResponse({
           status: "unavailable",
           source: "none",
           fetchedAt: "2026-02-28T12:00:00.000Z",
-        });
-      }
-
-      if (url.endsWith("/api/claude/usage") && method === "GET") {
-        return jsonResponse({
-          status: "unavailable",
-          source: "none",
-          fetchedAt: "2026-02-28T12:00:00.000Z",
+          sessionCount: 0,
+          costToday: null,
+          cost7d: null,
+          cost30d: null,
+          tokensToday: null,
+          tokens7d: null,
+          tokens30d: null,
         });
       }
 
@@ -455,19 +453,18 @@ describe("App Monitor runtime", () => {
         return jsonResponse([]);
       }
 
-      if (url.endsWith("/api/codex/usage") && method === "GET") {
+      if (url.endsWith("/api/opencode/usage") && method === "GET") {
         return jsonResponse({
           status: "unavailable",
           source: "none",
           fetchedAt: "2026-02-28T12:00:00.000Z",
-        });
-      }
-
-      if (url.endsWith("/api/claude/usage") && method === "GET") {
-        return jsonResponse({
-          status: "unavailable",
-          source: "none",
-          fetchedAt: "2026-02-28T12:00:00.000Z",
+          sessionCount: 0,
+          costToday: null,
+          cost7d: null,
+          cost30d: null,
+          tokensToday: null,
+          tokens7d: null,
+          tokens30d: null,
         });
       }
 
@@ -581,19 +578,18 @@ describe("App Monitor runtime", () => {
         return jsonResponse([]);
       }
 
-      if (url.endsWith("/api/codex/usage") && method === "GET") {
+      if (url.endsWith("/api/opencode/usage") && method === "GET") {
         return jsonResponse({
           status: "unavailable",
           source: "none",
           fetchedAt: "2026-02-28T12:00:00.000Z",
-        });
-      }
-
-      if (url.endsWith("/api/claude/usage") && method === "GET") {
-        return jsonResponse({
-          status: "unavailable",
-          source: "none",
-          fetchedAt: "2026-02-28T12:00:00.000Z",
+          sessionCount: 0,
+          costToday: null,
+          cost7d: null,
+          cost30d: null,
+          tokensToday: null,
+          tokens7d: null,
+          tokens30d: null,
         });
       }
 

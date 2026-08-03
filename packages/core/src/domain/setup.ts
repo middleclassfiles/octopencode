@@ -1,7 +1,7 @@
 export type WorkspaceSetupStepId =
   | "initialize-workspace"
   | "ensure-gitignore"
-  | "check-claude"
+  | "check-opencode"
   | "check-git"
   | "check-curl"
   | "create-tentacles";

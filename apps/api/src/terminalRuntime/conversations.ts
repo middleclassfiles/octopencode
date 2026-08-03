@@ -7,7 +7,7 @@ import type {
   ConversationSessionDetail,
   ConversationSessionSummary,
   ConversationTurn,
-} from "@octogent/core";
+} from "@hydra/core";
 
 import type { AgentRuntimeState } from "../agentStateDetection";
 
@@ -289,8 +289,8 @@ export const readConversationSession = (
     return null;
   }
 
-  // Only use clean turns from Claude Code's structured transcript (via Stop hook).
-  const turns = readClaudeTranscriptTurns(transcriptDirectoryPath, sessionId) ?? [];
+  // Only use clean turns from opencode's structured transcript (via Stop hook).
+  const turns = readOpencodeTranscriptTurns(transcriptDirectoryPath, sessionId) ?? [];
   const summary = buildConversationSummary(sessionId, events, turns);
 
   return {
@@ -361,6 +361,10 @@ export const deleteConversation = (transcriptDirectoryPath: string, sessionId: s
   const transcriptFile = join(transcriptDirectoryPath, transcriptFilenameForSession(sessionId));
   const turnsFile = join(
     transcriptDirectoryPath,
+    `${encodeURIComponent(sessionId)}.opencode-turns.json`,
+  );
+  const legacyTurnsFile = join(
+    transcriptDirectoryPath,
     `${encodeURIComponent(sessionId)}.claude-turns.json`,
   );
 
@@ -372,12 +376,14 @@ export const deleteConversation = (transcriptDirectoryPath: string, sessionId: s
     // Best-effort removal
   }
 
-  try {
-    if (existsSync(turnsFile)) {
-      rmSync(turnsFile);
+  for (const legacyPath of [turnsFile, legacyTurnsFile]) {
+    try {
+      if (existsSync(legacyPath)) {
+        rmSync(legacyPath);
+      }
+    } catch {
+      // Best-effort removal
     }
-  } catch {
-    // Best-effort removal
   }
 };
 
@@ -388,7 +394,11 @@ export const deleteAllConversations = (transcriptDirectoryPath: string) => {
 
   const files = readdirSync(transcriptDirectoryPath);
   for (const file of files) {
-    if (file.endsWith(".jsonl") || file.endsWith(".claude-turns.json")) {
+    if (
+      file.endsWith(".jsonl") ||
+      file.endsWith(".opencode-turns.json") ||
+      file.endsWith(".claude-turns.json")
+    ) {
       try {
         rmSync(join(transcriptDirectoryPath, file));
       } catch {
@@ -398,24 +408,24 @@ export const deleteAllConversations = (transcriptDirectoryPath: string) => {
   }
 };
 
-const claudeTurnsFilename = (sessionId: string) =>
-  `${encodeURIComponent(sessionId)}.claude-turns.json`;
+const opencodeTurnsFilename = (sessionId: string) =>
+  `${encodeURIComponent(sessionId)}.opencode-turns.json`;
 
-export const storeClaudeTranscriptTurns = (
+export const storeOpencodeTranscriptTurns = (
   transcriptDirectoryPath: string,
   sessionId: string,
   turns: ConversationTurn[],
 ) => {
   ensureTranscriptDirectory(transcriptDirectoryPath);
-  const filePath = join(transcriptDirectoryPath, claudeTurnsFilename(sessionId));
+  const filePath = join(transcriptDirectoryPath, opencodeTurnsFilename(sessionId));
   writeFileSync(filePath, JSON.stringify(turns), "utf8");
 };
 
-const readClaudeTranscriptTurns = (
+const readOpencodeTranscriptTurns = (
   transcriptDirectoryPath: string,
   sessionId: string,
 ): ConversationTurn[] | null => {
-  const filePath = join(transcriptDirectoryPath, claudeTurnsFilename(sessionId));
+  const filePath = join(transcriptDirectoryPath, opencodeTurnsFilename(sessionId));
   if (!existsSync(filePath)) {
     return null;
   }
@@ -468,7 +478,7 @@ export const searchConversations = (
     .filter((sessionId): sessionId is string => sessionId !== null);
 
   for (const sessionId of sessionIds) {
-    const turns = readClaudeTranscriptTurns(transcriptDirectoryPath, sessionId) ?? [];
+    const turns = readOpencodeTranscriptTurns(transcriptDirectoryPath, sessionId) ?? [];
     for (const turn of turns) {
       if (turn.content.toLowerCase().includes(lowerQuery)) {
         hits.push({

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { WorkspaceSetupSnapshot, WorkspaceSetupStepId } from "@octogent/core";
+import type { WorkspaceSetupSnapshot, WorkspaceSetupStepId } from "@hydra/core";
 import {
   Check as CheckIcon,
   ChevronDown,
@@ -1197,7 +1197,7 @@ export const CanvasPrimaryView = ({
               onRunStep={(stepId) => {
                 void onRunWorkspaceSetupStep?.(stepId);
               }}
-              onLaunchClaudeCode={() => {
+              onLaunchOpencode={() => {
                 void handleLaunchWorkspaceSetupPlanner();
               }}
               isLaunchingAgent={isLaunchingWorkspaceSetupPlanner}
