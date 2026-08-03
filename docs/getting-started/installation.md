@@ -12,6 +12,29 @@ Hydra is a local Node.js project with a local API and web UI.
 
 The current docs are opencode-first. Hydra is built around opencode as the default agent workflow.
 
+## One-click install
+
+The repo ships a one-click installer that checks prerequisites, installs anything
+missing (Node.js via winget, pnpm and opencode via npm), builds the package,
+installs the `hydra` CLI globally, and verifies the result.
+
+Windows:
+
+```bat
+install.cmd
+```
+
+macOS / Linux:
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+Flags: `--check` (only report prerequisite status), `--skip-build` (reuse an
+existing build), `--yes` (never prompt). The same installer can be run directly
+with `node scripts/install.mjs`.
+
 ## Local development install
 
 ```bash

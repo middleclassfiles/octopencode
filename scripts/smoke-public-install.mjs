@@ -73,11 +73,11 @@ const runChecked = (command, args, options = {}) => {
 
 const writeProviderStub = () => {
   if (process.platform === "win32") {
-    writeFileSync(join(binDir, "codex.cmd"), "@echo off\r\nexit /b 0\r\n", "utf8");
+    writeFileSync(join(binDir, "opencode.cmd"), "@echo off\r\nexit /b 0\r\n", "utf8");
     return;
   }
 
-  const stubPath = join(binDir, "codex");
+  const stubPath = join(binDir, "opencode");
   writeFileSync(stubPath, "#!/bin/sh\nexit 0\n", "utf8");
   chmodSync(stubPath, 0o755);
 };

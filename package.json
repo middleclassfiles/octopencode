@@ -16,6 +16,8 @@
     "start": "pnpm dev",
     "dev": "node scripts/dev.mjs",
     "build": "pnpm --filter @hydra/web build && pnpm --filter @hydra/web exec vite build --config vite.api.bundle.config.mts && node scripts/build-package.mjs",
+    "install:global": "node scripts/install.mjs",
+    "install:check": "node scripts/install.mjs --check",
     "smoke:public-install": "node scripts/smoke-public-install.mjs",
     "test": "pnpm -r test",
     "lint": "biome check .",
