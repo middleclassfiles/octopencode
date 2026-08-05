@@ -404,6 +404,7 @@ const main = async () => {
   out("  3. create a tentacle (Deck \u25b8 Create tentacle) or run `hydra tentacle create <name>`");
   out("  4. launch a terminal and start delegating todo items");
   hr();
+  out("Your existing opencode conversations, settings, and login were NOT touched.");
   out("Full documentation: https://github.com/middleclassfiles/octopencode#readme");
   readline.close();
 };

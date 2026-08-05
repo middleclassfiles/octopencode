@@ -11,9 +11,28 @@ echo "============================================================"
 echo ""
 
 if ! command -v node >/dev/null 2>&1; then
-  echo "  [ERROR] Node.js was not found on PATH."
-  echo "          Install Node.js 22+ from https://nodejs.org,"
-  echo "          then run this installer again."
+  if command -v brew >/dev/null 2>&1; then
+    echo "  Node.js was not found. Installing via Homebrew..."
+    brew install node
+  elif command -v apt-get >/dev/null 2>&1; then
+    echo "  Node.js was not found. Installing via apt..."
+    sudo apt-get update
+    sudo apt-get install -y nodejs npm
+  elif command -v dnf >/dev/null 2>&1; then
+    echo "  Node.js was not found. Installing via dnf..."
+    sudo dnf install -y nodejs npm
+  else
+    echo "  [ERROR] Node.js was not found and no supported package manager is available."
+    echo "          Install Node.js 22+ from https://nodejs.org, then run:"
+    echo "          ./install.sh"
+    echo ""
+    exit 1
+  fi
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "  [ERROR] Node.js is still not available. Open a NEW terminal and re-run:"
+  echo "          ./install.sh"
   echo ""
   exit 1
 fi

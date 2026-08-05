@@ -25,9 +25,9 @@ Hydra runs a **local dashboard + API + PTY runtime** on your machine. Each openc
 
 ### Windows
 
-1. Install [Node.js 22+](https://nodejs.org) (any LTS) — the installer can do this for you via winget.
-2. Double-click **`install.cmd`** in this repo (or run `powershell -ExecutionPolicy Bypass -File install.ps1`).
-3. When prompted, let it install **pnpm** and **opencode** automatically.
+1. Download or clone this repo and open it.
+2. **Double-click `install.cmd`** (or run `powershell -ExecutionPolicy Bypass -File install.ps1`).
+3. Everything else is automatic: if Node.js is missing it is installed for you (via winget), then **pnpm** and **opencode** are installed, the package is built, and the `hydra` CLI is installed globally.
 4. Open a **new** terminal, `cd` into the project you want to orchestrate, and run:
 
 ```bat
@@ -43,7 +43,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-Then, in a new terminal:
+`./install.sh` installs Node.js automatically when it is missing (Homebrew, apt, or dnf), then runs the same one-click installer. Then, in a new terminal:
 
 ```bash
 hydra
@@ -52,12 +52,25 @@ hydra
 ### What the installer does
 
 1. Checks prerequisites: **Node.js 22+, pnpm, opencode, git, gh, curl**
-2. Auto-installs anything missing (winget on Windows; npm for pnpm/opencode)
+2. Auto-installs anything missing (winget on Windows; Homebrew/apt/dnf for Node.js; npm for pnpm/opencode)
 3. Runs `pnpm install` and `pnpm build`
 4. Installs the `hydra` CLI globally via `npm install -g .`
 5. Verifies the CLI responds
 
 Flags: `--check` (only report prerequisite status), `--skip-build` (reuse existing build), `--yes` (never prompt).
+
+### What the installer will NOT touch
+
+This installer is deliberately side-effect-safe. It only works inside the repo copy plus the npm global directory. It does **not** touch or delete any of your opencode data:
+
+- Your **opencode conversations, sessions, and past chats** are never read, moved, or deleted
+- Your **opencode settings/configuration** (`~/.config/opencode`, `opencode.json`) are untouched
+- Your **opencode authentication/login** is untouched
+- Your opencode **skills**, models, and providers are untouched
+- Nothing in `~/.local/share/opencode`, `~/.codex`, or `~/.claude` is modified
+- Hydra keeps its own state separately under `~/.hydra/` and per-project `.hydra/`
+
+You can run the installer, update the repo, or even uninstall Hydra (`npm uninstall -g hydra`) at any time without affecting your existing opencode chats.
 
 ## Requirements
 
